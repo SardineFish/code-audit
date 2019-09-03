@@ -1,0 +1,18 @@
+{
+  "name": "code-audit-test",
+  "version": "1.0.0",
+  "description": "Testing project for code-audit.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:watch": "npx tsc -w",
+    "build": "npx tsc"
+  },
+  "author": "SardineFish",
+  "license": "GPL-3.0",
+  "devDependencies": {},
+  "dependencies": {
+    "@types/node": "^12.7.3",
+    "code-audit": "file:../package"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "code-audit",
+  "version": "1.0.0",
+  "description": "npm package for code-audit native module.",
+  "main": "build/Release/code_audit.node",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx node-gyp build"
+  },
+  "author": "SardineFish",
+  "license": "GPL-3.0",
+  "devDependencies": {
+    "node-addon-api": "^1.7.1",
+    "node-gyp": "^5.0.3"
+  }
+}
