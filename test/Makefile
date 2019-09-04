@@ -1,4 +1,6 @@
 .DEFAULT_GOAL := all
+CC=g++
+CPPFLAGS+= -I../core/include
 BUILD_DIR=build
 BIN_DIR=bin
 
@@ -22,5 +24,11 @@ clean:
 config: 
 	$(if $(filter $(OS), Windows_NT), cmake . -B$(BUILD_DIR) -G "MinGW Makefiles", cmake . -B$(BUILD_DIR))
 
-all:
+all: test-lexer
 	cd ./build && make
+
+../core/src/lexer/lex.yy.c: ../core/src/lexer/c.l
+	cd ../core/src/lexer && flex c.l
+
+test-lexer: src/lexer/test_lexer.o ../core/src/lexer/lex.yy.o
+	g++ $^ -o ./bin/test-lexer

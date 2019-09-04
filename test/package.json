@@ -4,7 +4,7 @@
   "description": "Testing project for code-audit.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npx mocha ./src/test.js",
     "build:watch": "npx tsc -w",
     "build": "npx tsc"
   },
@@ -13,6 +13,8 @@
   "devDependencies": {},
   "dependencies": {
     "@types/node": "^12.7.3",
-    "code-audit": "file:../package"
+    "chai": "^4.2.0",
+    "code-audit": "file:../package",
+    "mocha": "^6.2.0"
   }
 }

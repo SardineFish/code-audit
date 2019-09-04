@@ -1,7 +1,11 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const code_audit_1 = __importDefault(require("code-audit"));
-console.log(code_audit_1.default.helloWorld);
+const fs = require("fs");
+const Path = require("path");
+
+describe("Test start", () =>
+    describe("Scan test files", () =>
+    {
+        fs.readdirSync(Path.resolve("./src")).forEach(
+            file => /\.test\.js$/.test(file) ? it(file, () => require(Path.resolve("./src", file))) : null
+        );
+    })
+);
