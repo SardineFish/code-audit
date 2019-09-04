@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(code_audit_test)
 
-set(PROJECT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")
+#set(PROJECT_SOURCE_DIR "${CMAKE_SOURCE_DIR}/src")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_SOURCE_DIR}/bin")
 
 file(MAKE_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})

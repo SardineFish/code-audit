@@ -5,6 +5,7 @@ const promisify = require("util").promisify;
  * @param {string} path
  * @param {string[]} args
  * @param {string} input
+ * @returns {Promise<string>}
  */
 module.exports.test = function (path, args, input)
 {

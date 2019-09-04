@@ -1,5 +1,7 @@
+#pragma once
 
-typedef struct {
+typedef struct
+{
     const char* name;
     const char* attribute;
 } token_t;
