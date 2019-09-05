@@ -13,12 +13,13 @@ enum StringAnalyseMode
     STR_ANALYSE_CHAR,
 };
 
-class StringBasedAnalyser : CodeAnanyser
+class StringBasedAnalyser : public CodeAnanyser
 {
   public:
     StringAnalyseMode mode;
+    StringBasedAnalyser();
     StringBasedAnalyser(StringAnalyseMode mode);
-    double calcSimilarity(string source, string sample);
+    double calcSimilarity(string source, string sample) override;
 };
 
 }

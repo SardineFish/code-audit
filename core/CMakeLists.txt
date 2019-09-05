@@ -17,6 +17,7 @@ file(GLOB SOURCES
 
 )
 add_compile_options(-std=c++11)
+add_compile_options(-g)
 
 include_directories("${PROJECT_SOURCE_DIR}/include")
 

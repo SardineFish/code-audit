@@ -25,13 +25,24 @@ struct DiffTableNode
 };
 
 template <typename T>
-vector<DiffChanges> diff(vector<T> src, vector<T> dst, std::function<bool(T, T)> comparer);
+vector<DiffChanges> diff(vector<T> src, vector<T> dst, vector<DiffChanges> &result, bool (*comparer)(const T*, const T*))
+{
+    return diff(&src[0], &dst[0], src.size(), dst.size(), result, comparer);
+}
 
 template <typename T>
-vector<DiffChanges> diff(T *src, T *dst, int lenSrc, int lenDst, vector<DiffChanges> &result, std::function<bool(T, T)> comparer)
+vector<DiffChanges> diff(T *src, T *dst, int lenSrc, int lenDst, vector<DiffChanges> &result, bool (*comparer)(const T*, const T*))
 {
-    DiffTableNode table[lenDst + 2][lenSrc + 2];
-
+    DiffTableNode *table[lenDst + 2];
+    auto buffer = calloc((lenDst + 2) * (lenSrc + 2), sizeof(DiffTableNode));
+    for (int i = 0; i < lenDst + 2; i++)
+    {
+        table[i] = (DiffTableNode *)(buffer + (sizeof(DiffTableNode) * (lenSrc + 2) * i));
+        for (int j = 0; j < lenSrc + 2; j++)
+        {
+            table[i][j].cost = INT32_MAX;
+        }
+    }
     table[0][0].cost = 0;
     for (int j = 0; j < lenDst + 1; j++)
     {
@@ -50,7 +61,7 @@ vector<DiffChanges> diff(T *src, T *dst, int lenSrc, int lenDst, vector<DiffChan
                 table[j + 1][i].cost = table[j][i].cost + 1;
             }
             // keep
-            if (comparer(src[i], dst[j]) && table[j][i].cost < table[j + 1][i + 1].cost)
+            if (i < lenSrc && j < lenDst && comparer(&src[i], &dst[j]) && table[j][i].cost < table[j + 1][i + 1].cost)
             {
                 table[j + 1][i + 1].changes = DIFF_KEP;
                 table[j + 1][i + 1].cost = table[j][i].cost;
@@ -80,8 +91,9 @@ vector<DiffChanges> diff(T *src, T *dst, int lenSrc, int lenDst, vector<DiffChan
             // getchar();
         }
     }
-    stack<DiffChanges> diffStack;
     int i = lenSrc, j = lenDst;
+    auto t = calloc(sizeof(char), 1000);
+    stack<DiffChanges> diffStack;
     while (i > 0 || j > 0)
     {
         switch (table[j][i].changes)
@@ -107,6 +119,7 @@ vector<DiffChanges> diff(T *src, T *dst, int lenSrc, int lenDst, vector<DiffChan
         result.push_back(diffStack.top());
         diffStack.pop();
     }
+    free(buffer);
     return result;
 }
 

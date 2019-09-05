@@ -8,8 +8,11 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/test/bin/test-diff",
+            "program": "${workspaceFolder}/test/bin/test",
             "args": [
+                "sim",
+                "--string",
+                "--line",
                 "./test/data/diffA.txt",
                 "./test/data/diffB.txt"
             ],
@@ -26,7 +29,7 @@
                 }
             ],
             "windows": {
-                "program": "/mnt/f/Project/C++/code-audit/test/bin/test-diff",
+                "program": "/mnt/f/Project/C++/code-audit/test/bin/test",
                 "cwd": "/mnt/f/Project/C++/code-audit",
                 "pipeTransport": {
                     "pipeCwd": "",
@@ -39,7 +42,7 @@
                 }
             },
             "linux": {
-                "program": "${workspaceRoot}/test/bin/test-diff",
+                "program": "${workspaceRoot}/test/bin/test",
                 "cwd": "${workspaceFolder}"
             }
             

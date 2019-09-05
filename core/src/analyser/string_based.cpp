@@ -2,12 +2,15 @@
 #include <sstream>
 #include <cstring>
 #include <functional>
+#include "code_audit/diff.h"
 
 namespace CodeAudit
 {
 
-
-
+StringBasedAnalyser::StringBasedAnalyser()
+{
+    this->mode = STR_ANALYSE_LINE;
+}
 StringBasedAnalyser::StringBasedAnalyser(StringAnalyseMode mode)
 {
     this->mode = mode;
@@ -31,6 +34,15 @@ double StringBasedAnalyser::calcSimilarity(string source, string sample)
             sampleStream.getline(buffer, MAX_LINE_LENGTH);
             sampleLines.push_back(string(buffer));
         }
+        vector<DiffChanges> diffRestult;
+        diff<string>(sampleLines, sourceLines, diffRestult, [](const string *a, const string *b) -> bool { return *a == *b; });
+        int similarLines = 0;
+        for (auto p = diffRestult.begin(); p < diffRestult.end();p++)
+        {
+            if(*p == DIFF_KEP)
+                similarLines++;
+        }
+        return (double)similarLines / (double)sourceLines.size();
     }
 }
 

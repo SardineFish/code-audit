@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <iostream>
 
 namespace CodeAudit
 {
@@ -18,8 +19,8 @@ struct Diagnostic
 class CodeAnanyser
 {
   public:
-    double calcSimilarity(string source, string sample);
-    vector<Diagnostic> diagnose(string source);
+    virtual double calcSimilarity(string source, string sample);
+    virtual vector<Diagnostic> diagnose(string source);
 };
 
 } // namespace CodeAudit

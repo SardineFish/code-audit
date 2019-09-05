@@ -11,6 +11,9 @@ include_directories("${CMAKE_SOURCE_DIR}/../core/include")
 
 add_subdirectory("${CMAKE_SOURCE_DIR}/../core" "${CMAKE_SOURCE_DIR}/../core/build/test_build")
 
+add_compile_options(-std=c++11)
+add_compile_options(-g)
+
 add_executable(test src/test.cpp)
 
 target_link_libraries(test code_audit_core)

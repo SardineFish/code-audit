@@ -20,6 +20,7 @@ define rm
 endef
 
 clean:
+	find -name "*.o" -type f -delete
 	$(call rm, $(BUILD_DIR))
 	$(call rm, $(BIN_DIR))
 	

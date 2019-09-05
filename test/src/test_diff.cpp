@@ -19,7 +19,7 @@ int main(int argc, char**argv)
     cin >> textDst;
 
     vector<DiffChanges> result;
-    diff<char>(textSrc, textDst, strlen(textSrc), strlen(textDst), result, [](char a, char b) -> bool { return a == b; });
+    diff<char>(textSrc, textDst, strlen(textSrc), strlen(textDst), result, [](const char* a, const char* b) -> bool { return *a == *b; });
 
     for (auto p = result.begin(); p < result.end();p++)
     {
