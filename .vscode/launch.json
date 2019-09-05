@@ -42,7 +42,7 @@
                 }
             },
             "linux": {
-                "program": "${workspaceRoot}/test/bin/test",
+                "program": "${workspaceRoot}/test/bin/test-diff",
                 "cwd": "${workspaceFolder}"
             }
             

@@ -9,6 +9,35 @@ using namespace CodeAudit;
 
 int main(int argc, char**argv)
 {
+
+    auto list = {
+        DIFF_DEL,
+        DIFF_DEL,
+        DIFF_ADD,
+        DIFF_ADD,
+        DIFF_ADD,
+        DIFF_KEP,
+        DIFF_KEP,
+        DIFF_DEL,
+        DIFF_KEP,
+        DIFF_DEL,
+        DIFF_DEL,
+        DIFF_DEL,
+        DIFF_ADD,
+        DIFF_ADD,
+        DIFF_DEL,
+        DIFF_ADD,
+        DIFF_KEP,
+    };
+
+    vector<DiffChanges> changes;
+    for(auto &p :list)
+    {
+        changes.push_back(p);
+    }
+
+    mergeChanges(changes);
+
     fstream src;
     fstream dst;
     src.open(argv[1]);

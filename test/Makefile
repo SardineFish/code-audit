@@ -39,5 +39,8 @@ test-lexer: src/lexer/test_lexer.o ../core/src/lexer/lex.yy.o
 src/test_diff.o: src/test_diff.cpp ../core/include/code_audit/diff.h
 	$(CC) -c $(CPPFLAGS) -o src/test_diff.o src/test_diff.cpp
 
-test-diff: src/test_diff.o
+test-diff: src/test_diff.o ../core/src/utils/diff.o
 	g++ -o ./bin/test-diff $^ 
+
+test-diff-mege: src/test-diff-merge.cpp
+	$(CC) $(CPPFLAGS) -o bin/test-diff-merge $^

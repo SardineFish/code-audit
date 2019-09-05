@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -13,9 +15,10 @@ using namespace std;
 enum DiffChanges
 {
 
-    DIFF_ADD,
-    DIFF_DEL,
-    DIFF_KEP,
+    DIFF_ADD = 2,
+    DIFF_DEL = 1,
+    DIFF_KEP = 0,
+    DIFF_RPL = DIFF_ADD | DIFF_DEL,
 };
 
 struct DiffTableNode
@@ -122,5 +125,7 @@ vector<DiffChanges> diff(T *src, T *dst, int lenSrc, int lenDst, vector<DiffChan
     free(buffer);
     return result;
 }
+
+vector<DiffChanges> mergeChanges(vector<DiffChanges> &changes);
 
 } // namespace CodeAudit

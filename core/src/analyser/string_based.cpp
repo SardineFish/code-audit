@@ -36,13 +36,14 @@ double StringBasedAnalyser::calcSimilarity(string source, string sample)
         }
         vector<DiffChanges> diffRestult;
         diff<string>(sampleLines, sourceLines, diffRestult, [](const string *a, const string *b) -> bool { return *a == *b; });
+        mergeChanges(diffRestult);
         int similarLines = 0;
-        for (auto p = diffRestult.begin(); p < diffRestult.end();p++)
+        for (auto &p : diffRestult)
         {
-            if(*p == DIFF_KEP)
+            if(p == DIFF_KEP)
                 similarLines++;
         }
-        return (double)similarLines / (double)sourceLines.size();
+        return (double)similarLines / (double)diffRestult.size();
     }
 }
 
