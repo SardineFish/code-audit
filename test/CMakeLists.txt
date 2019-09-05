@@ -16,4 +16,7 @@ add_compile_options(-g)
 
 add_executable(test src/test.cpp)
 
+add_executable(test_lexer src/lexer/test_lexer.cpp)
+
 target_link_libraries(test code_audit_core)
+target_link_libraries(test_lexer code_audit_core)

@@ -10,11 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/test/bin/test",
             "args": [
-                "sim",
-                "--string",
-                "--line",
-                "./test/data/diffA.txt",
-                "./test/data/diffB.txt"
+                "${workspaceFolder}/test/data/code.c"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -42,7 +38,7 @@
                 }
             },
             "linux": {
-                "program": "${workspaceRoot}/test/bin/test-diff",
+                "program": "${workspaceRoot}/test/bin/test_lexer",
                 "cwd": "${workspaceFolder}"
             }
             

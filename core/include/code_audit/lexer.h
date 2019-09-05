@@ -1,13 +1,25 @@
 #pragma once
 
-typedef struct
+#include <string>
+#include <vector>
+
+using namespace std;
+
+namespace CodeAudit
 {
-    const char* name;
-    const char* attribute;
-} token_t;
 
-typedef void (*token_callback_t)(token_t);
+struct Token
+{
+    string name;
+    string attribute;
+};
 
-void set_token_callback(token_callback_t callback);
+class Lexer
+{
+public:
+    Lexer();
+    void lex(string source, vector<Token>& tokenList);
 
-void lexer(const char *text);
+private:
+};
+}

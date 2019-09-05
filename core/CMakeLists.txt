@@ -11,8 +11,8 @@ file(MAKE_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
 file(GLOB SOURCES
     "${PROJECT_SOURCE_DIR}/include/**/*.h"
     "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
-    "${PROJECT_SOURCE_DIR}/src/**/*.c"
-    "${PROJECT_SOURCE_DIR}/src/*.c"
+    "${PROJECT_SOURCE_DIR}/src/**/*.cc"
+    "${PROJECT_SOURCE_DIR}/src/*.cc"
     "${PROJECT_SOURCE_DIR}/src/*.cpp"
 
 )

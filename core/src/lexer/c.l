@@ -1,5 +1,5 @@
 %{
-#include "code_audit/lexer.h"
+#include "code_audit/c_lexer.h"
 
 void token(const char* name, const char* attribute);
 %}
@@ -33,16 +33,18 @@ ANY     (.|{NL})
 int yywrap(){ return 1; }
 
 token_callback_t TokenCallback;
+void* CallbackState;
 
 void token(const char* name, const char* attribute)
 {
     token_t t = {name, attribute};
-    TokenCallback(t);
+    TokenCallback(t, CallbackState);
 }
 
-void set_token_callback(token_callback_t callback)
+void set_token_callback(token_callback_t callback, void* state)
 {
     TokenCallback = callback;
+    CallbackState = state;
 }
 
 void lexer(const char *text)

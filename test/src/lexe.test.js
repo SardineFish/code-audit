@@ -10,7 +10,7 @@ describe("Lexer", () =>
     it("C code test", async () =>
     {
         
-        const result = await test(Path.resolve("./bin/test-lexer"), [], fs.readFileSync("./data/code.c"));
+        const result = await test(Path.resolve("./bin/test_lexer"), [], fs.readFileSync("./data/code.c"));
         //const result = (await promisify(exec)(`"./bin/test-lexer" "${Path.resolve("./data/code.c")}"`)).stdout;
         const expectResult = (await promisify(fs.readFile)(Path.resolve("./data/lex-result.txt"))).toString();
         expect("test").be.equal("test");
