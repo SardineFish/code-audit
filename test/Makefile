@@ -27,14 +27,14 @@ clean:
 config: 
 	$(if $(filter $(OS), Windows_NT), cmake . -B$(BUILD_DIR) -G "MinGW Makefiles", cmake . -B$(BUILD_DIR))
 
-all: test-lexer test-diff
-	cd ./build && make
+all: test-diff
+	cd ./build && make && \
+	echo "\nBuild Complete!\n"
 
 ../core/src/lexer/lex.yy.cpp: ../core/src/lexer/c.l
 	cd ../core/src/lexer && flex -o lex.yy.cpp c.l
 
-test-lexer: ../core/src/lexer/lex.yy.cpp
-	# g++ -o ./bin/test-lexer $^
+lexer: ../core/src/lexer/lex.yy.cpp
 
 src/test_diff.o: src/test_diff.cpp ../core/include/code_audit/diff.h
 	$(CC) -c $(CPPFLAGS) -o src/test_diff.o src/test_diff.cpp

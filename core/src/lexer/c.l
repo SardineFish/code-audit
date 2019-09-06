@@ -1,7 +1,10 @@
 %{
 #include "code_audit/c_lexer.h"
+#include <stdio.h>
 
 void token(const char* name, const char* attribute);
+
+// Avoid undecleare error from gcc in Windows.
 %}
 
 DIGIT   [0-9]

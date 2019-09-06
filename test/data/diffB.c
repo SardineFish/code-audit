@@ -1,10 +1,10 @@
-int a = 0, b = 5;
-long l = 0x8000000L;
+int _a = 0, _b = 5;
+long _l = 0x8000000L;
 float f = 0.00f;
-void foo(char* x, int y)
+void foo(char* _x, int _y)
 {
-    *(int*)x += x[y + 5];
-    for (int i = 0; i < y; i++)
+    *(int*)_x += _x[_y + 5];
+    for (int i = 0; i < _y; i++)
     {
         if (!(i <= 0.5))
         {
@@ -30,7 +30,7 @@ void foo(char* x, int y)
     do
     {
         while (1)
-            loop(&x);
+            loop(&_x);
     } while (0);
     return;
 }

@@ -13,7 +13,9 @@ args::Command sim(command, "sim", "Similarity analyse");
 args::Group arguments(p, "arguments", args::Group::Validators::DontCare, args::Options::Global);
 args::Group analyseMethod(arguments, "method", args::Group::Validators::Xor);
 args::Flag stringBased(analyseMethod, "string", "Use string based analyse, with --line or --char options.", {"str", "string"});
+args::Flag tokenBased(analyseMethod, "token", "Use token based analyser", {"token"});
 args::Group analyserOptions(arguments, "options", args::Group::Validators::DontCare);
+args::Flag tokenOnly(analyserOptions, "tokenonly", "Ignore token attribute when analysing.", {"tokenonly"});
 args::Flag perChar(analyserOptions, "char", "Analyse per-character.", {"char"});
 args::Flag perLine(analyserOptions, "line", "Analyse per-line.", {"line"});
 args::HelpFlag h(p, "help", "Display this help menu", {'h', "help"});
@@ -51,6 +53,16 @@ void similarity()
             stringAnalyser->mode = STR_ANALYSE_LINE;
         analyser = stringAnalyser;
     }
+    else
+    {
+        auto tokenAnalyser = new TokenBasedAnalyser();
+        if(tokenOnly)
+            tokenAnalyser->tokenOnly = true;
+        else
+            tokenAnalyser->tokenOnly = false;
+        analyser = tokenAnalyser;
+    }
+    
     auto result = analyser->calcSimilarity(source, sample);
     delete analyser;
     cout << result << endl;
