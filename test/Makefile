@@ -36,6 +36,10 @@ all: test-diff
 
 lexer: ../core/src/lexer/lex.yy.cpp
 
+parser: ../core/src/parser/c.y
+	bison -o ../core/src/parser/parser.yy.cpp $^
+	
+
 src/test_diff.o: src/test_diff.cpp ../core/include/code_audit/diff.h
 	$(CC) -c $(CPPFLAGS) -o src/test_diff.o src/test_diff.cpp
 

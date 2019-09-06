@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/test/bin/test",
             "args": [
-                "${workspaceFolder}/test/data/code.c"
+                "./test/data/syntax.c"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -25,7 +25,7 @@
                 }
             ],
             "windows": {
-                "program": "/mnt/f/Project/C++/code-audit/test/bin/test",
+                "program": "/mnt/f/Project/C++/code-audit/test/bin/test_parser",
                 "cwd": "/mnt/f/Project/C++/code-audit",
                 "pipeTransport": {
                     "pipeCwd": "",
