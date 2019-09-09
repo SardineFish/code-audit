@@ -21,9 +21,10 @@ ASTTree* Parser::parse(vector<Token>& tokens)
     set_tokens(&tokens);
     set_ast_callback(astCallback);
     yyparse();
+    auto ast = AST;
     reset_parser();
     AST = nullptr;
-    return AST;
+    return ast;
 }
 
 } // namespace SyntaxParser

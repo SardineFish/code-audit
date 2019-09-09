@@ -9,7 +9,7 @@ using namespace CodeAudit::SyntaxParser;
 int main(int argc, char** argv)
 {
     char buffer[8192];
-    if(argc>1)
+    if (argc > 1)
     {
         fstream fs;
         fs.open(string(argv[1]));
@@ -28,4 +28,7 @@ int main(int argc, char** argv)
 
     lexer.lex(source, tokens);
     auto ast = parser.parse(tokens);
+    cout << ast->toString();
+
+    return 0;
 }
