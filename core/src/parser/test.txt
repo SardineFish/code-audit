@@ -1,0 +1,11 @@
+TokenMap["="]
+    =TokenMap["+="]
+    =TokenMap["-="]
+    =TokenMap["*="]
+    =TokenMap["/="]
+    =TokenMap["%="]
+    =TokenMap["<<="]
+    =TokenMap[">>="]
+    =TokenMap["&="]
+    =TokenMap["^="]
+    =TokenMap["|="] = 

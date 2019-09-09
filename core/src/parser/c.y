@@ -24,8 +24,18 @@ namespace SyntaxParser
 %}
 
 %left ','
+%right ASSIGN //'=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|="
+%left OR
+%left AND
+%left '|'
+%left '^'
+%left '&'
+%left EQ //"==" "!="
+%left CMPR //'<' '>' "<=" ">="
+%left SHIFT //"<<" ">>"
 %left '+' '-'
 %left '*' '/' '%'
+
 %token ID
 %token TYPE
 %token NUMBER
@@ -35,6 +45,16 @@ namespace SyntaxParser
 %token ELSE "else"
 %token FOR "for"
 %token WHILE "while"
+%token ASSIGN // '=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|="
+%token EQ // "==" "!="
+%token CMPR // '<' '>' "<=" ">="
+%token SHIFT // "<<" ">>"
+%token OR "||"
+%token AND "||"
+%token INC "++"
+%token DEC "--"
+//%token INFIX_OP '=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|=" "==" "!="
+
 %%
 
 input:  /* empty */ { 
@@ -148,7 +168,46 @@ expr: ID {
         }
     | '(' expr ')' { $$ = (Expression*)$2; }
     | expr '+' expr { $$ = new InfixExpr("+", (Expression*)$1, (Expression*)$3); }
+    | expr '-' expr { $$ = new InfixExpr("-", (Expression*)$1, (Expression*)$3); }
     | expr '*' expr { $$ = new InfixExpr("*", (Expression*)$1, (Expression*)$3); }
+    | expr '/' expr { $$ = new InfixExpr("/", (Expression*)$1, (Expression*)$3); }
+    | expr '%' expr { $$ = new InfixExpr("%", (Expression*)$1, (Expression*)$3); }
+    | expr SHIFT expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
+    | expr CMPR expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
+    | expr ASSIGN expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
+    | expr EQ expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
+    | expr OR expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
+    | expr AND expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
+    | expr '&' expr {
+        //EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr("&", (Expression*)$1, (Expression*)$3);
+    }
+    | expr '|' expr {
+        //EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr("|", (Expression*)$1, (Expression*)$3);
+    }
+    | expr '^' expr {
+        //EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr("^", (Expression*)$1, (Expression*)$3);
+    }
     | func_call { $$ = $1; }
 ;
 /* FunctionInvokeNode */
@@ -256,7 +315,7 @@ var_def_element: id {
     | id '[' expr ']' { 
         $$ = new VariableDefine(nullptr, (TokenNode*)$1, nullptr, (Expression*)$3); 
     }
-    | id '=' expr { 
+    | id ASSIGN expr { 
         $$ = new VariableDefine(nullptr, (TokenNode*)$1, (Expression*)$3, nullptr); 
     }
 ;
@@ -315,6 +374,23 @@ void reset_parser()
     TokenMap["else"] = ELSE;
     TokenMap["for"] = FOR;
     TokenMap["while"] = WHILE;
+    TokenMap["||"] = OR;
+    TokenMap["&&"] = AND;
+    TokenMap["<"] = TokenMap[">"] = TokenMap["<="] = TokenMap[">="] = CMPR;
+    TokenMap["<<"] = TokenMap[">>"] = SHIFT;
+    TokenMap["=="] = TokenMap["!="] = EQ;
+    TokenMap["="]
+        =TokenMap["+="]
+        =TokenMap["-="]
+        =TokenMap["*="]
+        =TokenMap["/="]
+        =TokenMap["%="]
+        =TokenMap["<<="]
+        =TokenMap[">>="]
+        =TokenMap["&="]
+        =TokenMap["^="]
+        =TokenMap["|="] = ASSIGN;
+    
 }
 
 int yylex()
