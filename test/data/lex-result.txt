@@ -1,3 +1,8 @@
+<preprocessor #pragma once \
+    t>
+<preprocessor #include<stdio\
+.h>>
+<preprocessor #define T a>
 <int int>
 <id a>
 <= =>

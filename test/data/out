@@ -1,3 +1,8 @@
+<preprocessor #pragma once \
+    t>
+<preprocessor #include<stdio\
+.h>>
+<preprocessor #define T a>
 <int int>
 <id a>
 <= =>
@@ -6,6 +11,16 @@
 <id b>
 <= =>
 <number 5>
+<; ;>
+<long long>
+<id l>
+<= =>
+<number 0x8000000L>
+<; ;>
+<float float>
+<id f>
+<= =>
+<number 0.00f>
 <; ;>
 <void void>
 <id foo>
@@ -25,7 +40,12 @@
 <) )>
 <id x>
 <+= +=>
+<id x>
+<[ [>
 <id y>
+<+ +>
+<number 5>
+<] ]>
 <; ;>
 <for for>
 <( (>
@@ -74,7 +94,7 @@
 <; ;>
 <break break>
 <; ;>
-<id default>
+<default default>
 <: :>
 <id i>
 <*= *=>
@@ -84,8 +104,7 @@
 <; ;>
 <} }>
 <} }>
-<else else>
-<if if>
+<else if else if>
 <( (>
 <id i>
 <> >>

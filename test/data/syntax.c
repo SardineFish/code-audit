@@ -9,6 +9,8 @@
 long glob = 0;
 int main(int a[], int b)
 {
+    if (a == 0)
+        a[b]++;
     int a[] = {1, 2, 3, 4, 5};
     if (a == t)
     {

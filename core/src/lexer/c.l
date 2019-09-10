@@ -18,7 +18,7 @@ ANY     (.|{NL})
 %%
 
 {WS}    
-((\/\*{ANY}*\*\/)|(\/\/.*{NL}))
+((\/\*([^*]|\*[^/])*\*\/)|(\/\/.*{NL}))
 '(\\({CHR}|{DIGIT}+)|.)'                token("char", yytext);
 (\"([^\\"]|\\{CHR}|\\\")*\")            token("string", yytext);
 (else{SPACE}if)                         token("else if", yytext);

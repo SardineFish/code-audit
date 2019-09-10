@@ -2271,7 +2271,7 @@ yyreduce:
     { 
         auto block = new BlockNode;
         block->statements->push_back((Statement*)(yyvsp[0]));
-        (yyval) = (yyvsp[0]);
+        (yyval) = block;
     }
 #line 2277 "../core/src/parser/parser.yy.cpp" /* yacc.c:1646  */
     break;

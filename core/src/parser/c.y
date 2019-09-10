@@ -465,7 +465,7 @@ struct_elements: /* empty */ { $$ = new ListNode<Expression>; }
 block_or_line: statement { 
         auto block = new BlockNode;
         block->statements->push_back((Statement*)$1);
-        $$ = $1;
+        $$ = block;
     }
     | block { $$ = $1; }
 ;
