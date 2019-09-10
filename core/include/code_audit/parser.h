@@ -37,6 +37,48 @@ class Expression : public ASTNode
 {
 };
 
+class StructInit : public Expression
+{
+  public:
+    vector<Expression*>* elements;
+    virtual string toString() override;
+};
+
+class PrefixExpr : public Expression 
+{
+  public:
+    Token op;
+    Expression* expr;
+    PrefixExpr(Token op, Expression* expr);
+    virtual string toString() override;
+};
+class SubfixExpr : public Expression
+{
+  public:
+    Token op;
+    Expression* expr;
+    SubfixExpr(Expression* expr, Token op);
+    virtual string toString() override;
+};
+
+class ArraySubscript : public Expression
+{
+  public:
+    Expression* target;
+    Expression* subscript;
+    ArraySubscript(Expression* target, Expression* subscript);
+    virtual string toString() override;
+};
+
+class TypeCast : public Expression
+{
+  public:
+    TypeNode* type;
+    Expression* target;
+    TypeCast(TypeNode* type, Expression* target);
+    virtual string toString() override;
+};
+
 class InfixExpr : public Expression
 {
   public:
@@ -90,6 +132,24 @@ class Constant : public Expression
     virtual string toString() override;
 };
 
+class VariableDefine : public Expression
+{
+  public:
+    TypeNode* type;
+    TokenNode* id;
+    Expression* initValue;
+    vector<Expression*>* arrayDimensions;
+    VariableDefine(TypeNode* type, TokenNode* id, Expression* value);
+    virtual string toString() override;
+};
+
+class VariableDefStatement : public Statement
+{
+  public:
+    vector<VariableDefine*>* vars = new vector<VariableDefine*>;
+    virtual string toString() override;
+};
+
 class FunctionInvokeNode : public Expression
 {
   public:
@@ -113,7 +173,7 @@ class FunctionDefine : public Statement
     string name;
     TypeNode* type;
     TokenNode* id;
-    ListNode<ParameterNode>* args;
+    vector<VariableDefine*>* args;
     BlockNode* body;
     virtual string toString() override;
 };
@@ -153,28 +213,10 @@ class ForLoop : public Statement
     virtual string toString() override;
 };
 
-class VariableDefine : public Expression
-{
-  public:
-    TypeNode* type;
-    TokenNode* id;
-    Expression* initValue;
-    Expression* arraySize;
-    VariableDefine(TypeNode* type, TokenNode* id, Expression* value, Expression* size);
-    virtual string toString() override;
-};
-
-class VariableDefStatement : public Statement
-{
-  public:
-    vector<VariableDefine*>* vars = new vector<VariableDefine*>;
-    virtual string toString() override;
-};
-
 class ASTTree : public ASTNode
 {
   public:
-    vector<Statement*>* globals = new vector<Statement*>;
+    vector<ASTNode*>* globals = new vector<ASTNode*>;
     virtual string toString() override;
 };
 

@@ -17,7 +17,7 @@ TokenNode::TokenNode(Token t)
 }
 string TokenNode::toString()
 {
-    return this->token.name;
+    return this->token.attribute;
 }
 
 TypeNode::TypeNode(bool sign, Token type) : sign(sign), type(type){}
@@ -32,6 +32,17 @@ string TypeNode::toString()
     return str;
 }
 
+string StructInit::toString()
+{
+    string str = "{";
+    for(auto & element : *(this->elements))
+    {
+        if(element!=nullptr)
+            str += element->toString() + ",";
+    }
+    return str + "}";
+}
+
 InfixExpr::InfixExpr(string op, Expression* left, Expression* right)
 {
     this->op = op;
@@ -41,6 +52,30 @@ InfixExpr::InfixExpr(string op, Expression* left, Expression* right)
 string InfixExpr::toString()
 {
     return "(" + this->left->toString() + this->op + this->right->toString() + ")";
+}
+
+PrefixExpr::PrefixExpr(Token op, Expression* expr): op(op), expr(expr){}
+string PrefixExpr::toString()
+{
+    return "(" + this->op.attribute + "(" + this->expr->toString() + "))";
+}
+
+SubfixExpr::SubfixExpr(Expression* expr, Token op) : expr(expr), op(op){}
+string SubfixExpr::toString()
+{
+    return "((" + this->expr->toString() + ")" + this->op.attribute + ")";
+}
+
+ArraySubscript::ArraySubscript(Expression* target, Expression* subscript) : target(target), subscript(subscript) {}
+string ArraySubscript::toString()
+{
+    return "(" + this->target->toString() + ")[" + this->subscript->toString() + "]";
+}
+
+TypeCast::TypeCast(TypeNode* type, Expression* target) : type(type), target(target) {}
+string TypeCast::toString()
+{
+    return "(" + this->type->toString() + ")(" + this->target->toString() + ")";
 }
 
 string ExpressionStatement::toString()
@@ -98,9 +133,9 @@ string FunctionInvokeNode::toString()
 string FunctionDefine::toString()
 {
     string str = this->type->toString() + " " + this->id->token.attribute + "(";
-    for(auto & arg : *(this->args->list))
+    for(auto & arg : *(this->args))
     {
-        str += arg->type->toString() + " " + arg->id->token.attribute + ",";
+        str += arg->toString() + ",";
     }
     str += ")\n";
     str += this->body->toString();
@@ -123,7 +158,7 @@ ReturnStatement::ReturnStatement(Expression* expr)
 }
 string ReturnStatement::toString()
 {
-    return "return " + this->expr->toString();
+    return "return " + this->expr->toString() + ";";
 }
 
 ConditionStructure::ConditionStructure(Expression* expr, BlockNode* body): condition(expr), body(body){}
@@ -159,18 +194,25 @@ string ForLoop::toString()
     return str;
 }
 
+VariableDefine::VariableDefine(TypeNode* type, TokenNode* id, Expression* value)
+    : type(type), id(id), initValue(value)
+{
+}
 string VariableDefine::toString()
 {
     string str = this->type->toString() + " " + this->id->token.attribute;
-    if(this->arraySize != nullptr)
-        str += "[" + this->arraySize->toString() + "]";
+    for(auto & arr : *(this->arrayDimensions))
+    {
+        str += "[";
+        if(arr != nullptr)
+            str += arr->toString();
+        str += "]";
+    }
     if(this->initValue != nullptr )
         str += "=" + this->initValue->toString();
     return str;
 }
 
-VariableDefine::VariableDefine(TypeNode* type, TokenNode* id, Expression* value, Expression* size)
-    : type(type), id(id), initValue(value), arraySize(size){}
 
 string VariableDefStatement::toString()
 {

@@ -27,7 +27,7 @@ clean:
 config: 
 	$(if $(filter $(OS), Windows_NT), cmake . -B$(BUILD_DIR) -G "MinGW Makefiles", cmake . -B$(BUILD_DIR))
 
-all: test-diff
+all: lexer parser test-diff
 	cd ./build && make && \
 	echo "\nBuild Complete!\n"
 

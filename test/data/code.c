@@ -24,6 +24,12 @@
  */
 
 // Global variable
+
+#pragma once \
+    t
+#include<stdio\
+.h>
+#define T a
 int a = 0, b = 5;
 long l = 0x8000000L;
 float f = 0.00f;

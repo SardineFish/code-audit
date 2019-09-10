@@ -1,5 +1,15 @@
-int main(int a, int b)
+#pragma once
+#include<stdio.h>
+
+#define N 5
+
+#define MAX(X, Y) \
+    (X > Y ? X : Y)
+
+long glob = 0;
+int main(int a[], int b)
 {
+    int a[] = {1, 2, 3, 4, 5};
     if (a == t)
     {
         for (int a = 0; i < 5;i+5)
@@ -14,9 +24,39 @@ int main(int a, int b)
     1 >> 5 + 3 = 7 % 5 && 6;
     a = b = c + 1;
     b = 1 || 2 && 3 | 4 ^ 5 & 6 != 7 < 8 >> 9 + 10 * 11;
+    a = (double)(int)a++;
+    b = a+++++a;
+    b = *a + &b + +a - -b + ~a + !b;
+    *a.b + b + c;
+    &a.b + b + c;
+    return 0;
 }
 
-void f(int x)
+void bubbleSort(int arr[5], int term)
 {
-    f(x + 1);
+    for (int i = 0; i < term; ++i)
+    {
+        for (int index = 0; index < term - i - 1; ++index)
+        {
+            if (arr[index] < arr[index + 1])
+            {
+                int swap;
+                swap = arr[index];
+                arr[index] = arr[index + 1];
+                arr[index + 1] = swap;
+            }
+        }
+    }
+    for (int counter = 0; counter < term; counter++)
+    {
+        cout << arr[counter] << endl;
+    }
+
+    cout << "Hi in this program I will do bubble sort" << endl;
+    cout << "The numbers are 3, 9, 5, 10, 6" << endl;
+    int num[9] = {3, 9, 5, 3, 10, 6, 3, 3, 3};
+    int terms = sizeof(num) / sizeof(num[0]);
+    bubbleSort(num, terms);
+
+    // answer = [2, 5, 6, 9, 2, 10]
 }

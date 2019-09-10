@@ -24,7 +24,7 @@ namespace SyntaxParser
 %}
 
 %left ','
-%right ASSIGN //'=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|="
+%right ASSIGN OP_ASSIGN //'=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|="
 %left OR
 %left AND
 %left '|'
@@ -35,6 +35,8 @@ namespace SyntaxParser
 %left SHIFT //"<<" ">>"
 %left '+' '-'
 %left '*' '/' '%'
+%left '.' PTR_MBR
+%right '!' '~'
 
 %token ID
 %token TYPE
@@ -46,13 +48,18 @@ namespace SyntaxParser
 %token FOR "for"
 %token WHILE "while"
 %token ASSIGN // '=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|="
+%token OP_ASSIGN // "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|="
 %token EQ // "==" "!="
 %token CMPR // '<' '>' "<=" ">="
 %token SHIFT // "<<" ">>"
 %token OR "||"
-%token AND "||"
+%token AND "&&"
 %token INC "++"
 %token DEC "--"
+%token PTR_MBR "->"
+%token STRING;
+%token PREPROC;
+%token RETURN;
 //%token INFIX_OP '=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|=" "==" "!="
 
 %%
@@ -70,15 +77,23 @@ input:  /* empty */ {
 ;
 
 global_def: func_def { $$ = $1; }
+    | var_def ';' { $$ = $1; }
+    | preprocessor { $$ = $1; }
+;
+
+/* TokenNode */
+preprocessor: PREPROC { $$ = $1; }
 ;
 
 func_def: type id '(' args_declare ')' block { 
     auto f = new FunctionDefine;
+    ListNode<VariableDefine>* args = (ListNode<VariableDefine>*)$4;
     f->name = ((TokenNode*)$2)->token.name;
     f->type = (TypeNode*)$1;
     f->id = (TokenNode*)$2;
-    f->args = (ListNode<ParameterNode>*)$4;
+    f->args = args->list;
     f->body = (BlockNode*)$6;
+    delete args;
     $$ = f;
  }
 ;
@@ -113,29 +128,52 @@ type_name: TYPE { $$ = $1; }
 id: ID { $$ = $1; }
 ;
 
-args_declare: /* empty */ { $$ = new ListNode<ParameterNode>; }
-    | type id {
-        auto list = new ListNode<ParameterNode>;
-        auto p = new ParameterNode;
-        p->type = (TypeNode*)$1;
-        p->id = (TokenNode*)$2;
-        list->list->push_back(p);
+args_declare: /* empty */ { $$ = new ListNode<VariableDefine>; }
+    | args_declare_element {
+        auto list = new ListNode<VariableDefine>;
+        list->list->push_back((VariableDefine*)$1);
         $$ = list;
     }
-    | args_declare ',' type id {
-        ListNode<ParameterNode>* list = (ListNode<ParameterNode>*)$1;
-        auto p = new ParameterNode;
-        p->type = (TypeNode*)$3;
-        p->id = (TokenNode*)$4;
-        list->list->push_back(p);
+    | args_declare ',' args_declare_element {
+        ListNode<VariableDefine>* list = (ListNode<VariableDefine>*)$1;
+        list->list->push_back((VariableDefine*)$3);
         $$ = list;
     }
 ;
+
+/* VariableDefine */
+args_declare_element: type id array_dimensions {
+        auto arg = new VariableDefine((TypeNode*)$1, (TokenNode*)$2, nullptr);
+        ListNode<Expression>* arr = (ListNode<Expression>*)$3;
+        arg->arrayDimensions = arr->list;
+        delete arr;
+        $$ = arg;
+    }
+;
+
+/* ListNode<Expression> */
+array_dimensions: /* empty */ {
+        auto node = new ListNode<Expression>;
+        $$ = node;
+    }
+    | array_dimensions '['']' {
+        ListNode<Expression>* node = (ListNode<Expression>*)$1;
+        node->list->push_back(nullptr);
+        $$ = node;
+    }
+    | array_dimensions '[' expr ']' {
+        ListNode<Expression>* node = (ListNode<Expression>*)$1;
+        node->list->push_back((Expression*)$3);
+        $$ = node;
+    }
+;
+
+/* BlockNode */
 block: '{' statement_sequence '}' { 
         auto block = new BlockNode; 
         block->statements = ((ListNode<Statement>*)$2)->list;
-        $$ = block;
         delete $2;
+        $$ = block;
     }
 ;
 
@@ -156,17 +194,21 @@ statement: expr ';' {
     | if_struct { $$ = $1; }
     | for_struct { $$ = $1; }
     | while_struct { $$ = $1; }
+    | RETURN expr ';' { $$ = new ReturnStatement((Expression*)$2); }
 ;
+
+
 
 expr: ID { 
             EXTRACT_TOKEN(token, $1)
             $$ = new Variable(token);
         }
-    | NUMBER {
-            EXTRACT_TOKEN(token, $1)
-            $$ = new Constant(token);
-        }
+    | constant { $$ = $1; }
     | '(' expr ')' { $$ = (Expression*)$2; }
+    | prefix_expr { $$ = $1; }
+    | subfix_expr { $$ = $1; }
+    | array_subscript { $$ = $1; }
+    | type_cast { $$ = $1; }
     | expr '+' expr { $$ = new InfixExpr("+", (Expression*)$1, (Expression*)$3); }
     | expr '-' expr { $$ = new InfixExpr("-", (Expression*)$1, (Expression*)$3); }
     | expr '*' expr { $$ = new InfixExpr("*", (Expression*)$1, (Expression*)$3); }
@@ -177,6 +219,10 @@ expr: ID {
         $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
     }
     | expr CMPR expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
+    | expr OP_ASSIGN expr {
         EXTRACT_TOKEN(op, $2)
         $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
     }
@@ -197,18 +243,85 @@ expr: ID {
         $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
     }
     | expr '&' expr {
-        //EXTRACT_TOKEN(op, $2)
         $$ = new InfixExpr("&", (Expression*)$1, (Expression*)$3);
     }
     | expr '|' expr {
-        //EXTRACT_TOKEN(op, $2)
         $$ = new InfixExpr("|", (Expression*)$1, (Expression*)$3);
     }
     | expr '^' expr {
-        //EXTRACT_TOKEN(op, $2)
         $$ = new InfixExpr("^", (Expression*)$1, (Expression*)$3);
     }
+    | expr '.' expr {
+        $$ = new InfixExpr(".", (Expression*)$1, (Expression*)$3);
+    }
+    | expr PTR_MBR expr {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
+    }
     | func_call { $$ = $1; }
+;
+
+constant: NUMBER {
+        EXTRACT_TOKEN(num, $1)
+        $$ = new Constant(num);
+    }
+    | STRING {
+        EXTRACT_TOKEN(str, $1)
+        $$ = new Constant(str);
+    }
+
+array_subscript: expr '[' expr ']' {
+        $$ =  new ArraySubscript((Expression*)$1, (Expression*)$3);
+    }
+
+/* TypeCast */
+type_cast: '(' type ')' expr {
+    $$ = new TypeCast((TypeNode*)$2, (Expression*)$4);
+}
+;
+
+prefix_expr: INC expr {
+        EXTRACT_TOKEN(op, $1)
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+    | DEC expr {
+        EXTRACT_TOKEN(op, $1)
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+    | '+' expr {
+        Token op = {"+", "+"};
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+    | '-' expr {
+        Token op = {"-", "-"};
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+    | '!' expr {
+        Token op = {"!", "!"};
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+    | '~' expr {
+        Token op = {"~", "~"};
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+    | '*' expr {
+        Token op = {"*", "*"};
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+    | '&' expr {
+        Token op = {"&", "&"};
+        $$ = new PrefixExpr(op, (Expression*) $2);
+    }
+
+;
+subfix_expr: expr INC {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new SubfixExpr((Expression*)$1, op);
+    }
+    | expr DEC {
+        EXTRACT_TOKEN(op, $2)
+        $$ = new SubfixExpr((Expression*)$1, op);
+    }
 ;
 /* FunctionInvokeNode */
 func_call: ID '(' args_sequence ')' { 
@@ -309,14 +422,42 @@ var_def_seq: var_def_element {
 ;
 
 /* VariableDefine*/
-var_def_element: id { 
-        $$ = new VariableDefine(nullptr, (TokenNode*)$1, nullptr, nullptr); 
+var_def_element: id array_dimensions var_def_init { 
+        auto var = new VariableDefine(nullptr, (TokenNode*)$1, (Expression*)$3); 
+        ListNode<Expression>* arr = (ListNode<Expression>*)$2;
+        var->arrayDimensions = arr->list;
+        delete arr;
+        $$ = var;
     }
-    | id '[' expr ']' { 
-        $$ = new VariableDefine(nullptr, (TokenNode*)$1, nullptr, (Expression*)$3); 
+;
+
+/* Expression */
+var_def_init: /* empty */ { $$ = nullptr; }
+    | ASSIGN expr { $$ = $2; }
+    | ASSIGN struct_init { $$ = $2; }
+;
+
+/* StructInit */
+struct_init: '{' struct_elements '}' {
+        auto init = new StructInit;
+        ListNode<Expression>* elements = (ListNode<Expression>*)$2;
+        init->elements = elements->list;
+        delete elements;
+        $$ = init;
     }
-    | id ASSIGN expr { 
-        $$ = new VariableDefine(nullptr, (TokenNode*)$1, (Expression*)$3, nullptr); 
+;
+
+/* ListNode<Expression> */
+struct_elements: /* empty */ { $$ = new ListNode<Expression>; }
+    | expr {
+        auto elements = new ListNode<Expression>;
+        elements->list->push_back((Expression*)$1);
+        $$ = elements;
+    }
+    | struct_elements ',' expr {
+        ListNode<Expression>* elements = (ListNode<Expression>*)$1;
+        elements->list->push_back((Expression*)$3);
+        $$ = elements;
     }
 ;
 
@@ -379,8 +520,8 @@ void reset_parser()
     TokenMap["<"] = TokenMap[">"] = TokenMap["<="] = TokenMap[">="] = CMPR;
     TokenMap["<<"] = TokenMap[">>"] = SHIFT;
     TokenMap["=="] = TokenMap["!="] = EQ;
-    TokenMap["="]
-        =TokenMap["+="]
+    TokenMap["="] = ASSIGN;
+    TokenMap["+="]
         =TokenMap["-="]
         =TokenMap["*="]
         =TokenMap["/="]
@@ -389,8 +530,13 @@ void reset_parser()
         =TokenMap[">>="]
         =TokenMap["&="]
         =TokenMap["^="]
-        =TokenMap["|="] = ASSIGN;
-    
+        =TokenMap["|="] = OP_ASSIGN;
+    TokenMap["++"] = INC;
+    TokenMap["--"] = DEC;
+    TokenMap["->"] = PTR_MBR;
+    TokenMap["string"] = STRING;
+    TokenMap["preprocessor"] = PREPROC;
+    TokenMap["return"] = RETURN;
 }
 
 int yylex()
