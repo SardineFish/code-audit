@@ -12,6 +12,7 @@ namespace CodeAudit
 
 using namespace std;
 
+
 enum DiffChanges
 {
 
@@ -20,6 +21,8 @@ enum DiffChanges
     DIFF_KEP = 0,
     DIFF_RPL = DIFF_ADD | DIFF_DEL,
 };
+
+typedef vector<DiffChanges> DiffResults;
 
 struct DiffTableNode
 {
