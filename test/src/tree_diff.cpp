@@ -38,5 +38,6 @@ int main()
     dstTree->root->updateSize();
 
     auto similarity =  srcTree->compareTo(dstTree);
-    cout << similarity << endl;
+    cout << srcTree->compareTo(dstTree) << endl
+         << dstTree->compareTo(srcTree) << endl;
 }
