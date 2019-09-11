@@ -13,6 +13,7 @@ void tokenCallback(token_t token, void* state)
     Token t;
     t.name = string(token.name);
     t.attribute = string(token.attribute);
+    t.pos = token.pos;
     tokens->push_back(t);
 }
 

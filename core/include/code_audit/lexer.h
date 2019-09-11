@@ -12,6 +12,7 @@ struct Token
 {
     string name;
     string attribute;
+    int pos;
 };
 
 class Lexer

@@ -10,7 +10,7 @@
 
 #include <stdio.h>
 
-int main(int argc, const char * argv[]) {
+int main(int argc, char * argv[]) {
    /*
     冒泡排序的基本思想：每次比较两个相邻的元素，如果它们的顺序错误就把它们交换过来
     5个数冒泡 ：12，35，99，18，76

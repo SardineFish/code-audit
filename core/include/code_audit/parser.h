@@ -23,7 +23,11 @@ class TokenNode : public ASTNode
     virtual string toString() override;
 };
 
-class TypeNode : public ASTNode
+class Expression : public ASTNode
+{
+};
+
+class TypeNode : public Expression
 {
   public:
     bool sign = true;
@@ -31,10 +35,6 @@ class TypeNode : public ASTNode
     int pointerLevel = 0;
     TypeNode(bool sign, Token type);
     virtual string toString() override;
-};
-
-class Expression : public ASTNode
-{
 };
 
 class StructInit : public Expression
@@ -93,6 +93,22 @@ class Statement : public ASTNode
 {
 };
 
+class EmptyStatement : public Statement
+{
+  public:
+    virtual string toString()override {
+        return ";";
+    }
+};
+
+class KeywordStatement : public Statement
+{
+  public:
+    Token keyword;
+    KeywordStatement(Token token);
+    virtual string toString() override;
+};
+
 class ExpressionStatement : public Statement
 {
   public:
@@ -147,6 +163,15 @@ class VariableDefStatement : public Statement
 {
   public:
     vector<VariableDefine*>* vars = new vector<VariableDefine*>;
+    virtual string toString() override;
+};
+
+class FunctionDeclare : public Statement
+{
+  public:
+    TypeNode* type;
+    TokenNode* id;
+    vector<VariableDefine*>* args = new vector<VariableDefine*>;
     virtual string toString() override;
 };
 

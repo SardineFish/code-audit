@@ -15,7 +15,7 @@
 void QuickSort(int *arr, int start, int end);
 int Partition(int *arr, int start, int end);
 
-int main(int argc, const char *argv[])
+int main(int argc, char *argv[])
 {
     int array[] = {6,4,3,7,8,9};
     QuickSort(array, 0, 5);

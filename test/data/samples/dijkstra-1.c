@@ -14,7 +14,8 @@ int main() {
     graph* g;
 
 	FILE *f;
-	char buffer[100], ciudad[100], *ciudad_tmp;
+	char buffer[100], ciudad[100];
+	char *ciudad_tmp;
 	bool started_vertices;
 	int src, dest;
 	double distance;

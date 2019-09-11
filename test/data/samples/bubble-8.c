@@ -26,7 +26,7 @@ main ()
   printf ("Verbesserte Version (Pro Durchlauf 1 Vergleich weniger) wäre:(%d+%d+%d+ ... + 2 +1 =%d\n", anz-1,anz-2,anz-3,(anz/2)*(1+anz));
 }
 
-zeigeArrayInConsole (int *array, int anz)
+int zeigeArrayInConsole (int *array, int anz)
 {
 
   for (int i = 0; i < anz; i++)

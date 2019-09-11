@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
 			sizeOfArray *= 2;
 			
 			// Reallocates memory for the enlarged array.
-			lines = realloc(lines, sizeof(char*)*(sizeOfArray));
+			lines = realloc(lines, sizeof(char*)*sizeOfArray);
 			if (lines == NULL) {
 				printf("Can't allocate memory\n");
 		  		return -1;

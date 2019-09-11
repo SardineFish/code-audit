@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 void Q_sort(int a[],int num);
-static int m=0,n=0;
+int m=0,n=0;
 int main()
 {
 

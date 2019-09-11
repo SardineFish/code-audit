@@ -39,6 +39,7 @@ CMP_NODE(ReturnStatement)
 CMP_NODE(If)
 CMP_NODE(ForLoop)
 CMP_NODE(Expression)
+CMP_NODE(KeywordStatement)
 
 bool comparer(const ComparableTree<string>::ChildPtr*a, const ComparableTree<string>::ChildPtr*b)
 {
@@ -126,6 +127,8 @@ ComparableNode<string>* toDiffNode<Statement>(Statement* statement)
     CAST_TO(ReturnStatement, statement);
     CAST_TO(If, statement);
     CAST_TO(ForLoop, statement);
+    CAST_TO(KeywordStatement, statement);
+    return createNode("[statement]");
 }
 
 CMP_NODE_DEF(ExpressionStatement, statement)
@@ -221,7 +224,8 @@ CMP_NODE_DEF(Expression, expr)
 CMP_NODE_DEF(ReturnStatement, rtn)
 {
     auto node = createNode("return");
-    node->add(toDiffNode<Expression>(rtn->expr));
+    if(rtn->expr)
+        node->add(toDiffNode<Expression>(rtn->expr));
     return node;
 }
 
@@ -263,6 +267,11 @@ CMP_NODE_DEF(ForLoop, loop)
         node->add(EMPTY_NODE);
     node->add(toDiffNode<BlockNode>(loop->body));
     return node;
+}
+
+CMP_NODE_DEF(KeywordStatement, statement)
+{
+    return createNode(statement->keyword.attribute);
 }
 
 } // namespace CodeAudit

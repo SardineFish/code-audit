@@ -130,6 +130,19 @@ string FunctionInvokeNode::toString()
     return str + ")";
 }
 
+string FunctionDeclare::toString()
+{
+    string str = "";
+    str += this->type->toString() + " ";
+    str += this->id->token.attribute + "(";
+    for (auto & arg : *(this->args))
+    {
+        str += arg->toString() + ",";
+    }
+    str += ")";
+    return str;
+}
+
 string FunctionDefine::toString()
 {
     string str = this->type->toString() + " " + this->id->token.attribute + "(";
@@ -158,6 +171,8 @@ ReturnStatement::ReturnStatement(Expression* expr)
 }
 string ReturnStatement::toString()
 {
+    if(!this->expr)
+        return "return ;";
     return "return " + this->expr->toString() + ";";
 }
 
@@ -194,13 +209,21 @@ string ForLoop::toString()
     return str;
 }
 
+KeywordStatement::KeywordStatement(Token token): keyword(token){}
+string KeywordStatement::toString()
+{
+    return this->keyword.attribute;
+}
+
 VariableDefine::VariableDefine(TypeNode* type, TokenNode* id, Expression* value)
     : type(type), id(id), initValue(value)
 {
 }
 string VariableDefine::toString()
 {
-    string str = this->type->toString() + " " + this->id->token.attribute;
+    string str = this->type->toString() + " ";
+    if(this->id)
+        str +=this->id->token.attribute;
     for(auto & arr : *(this->arrayDimensions))
     {
         str += "[";

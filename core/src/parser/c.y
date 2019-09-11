@@ -2,6 +2,7 @@
     #include "code_audit/parser.h"
 
     #include <map>
+    #include <iostream>
 
     using namespace std;
     #define YYSTYPE ASTNode*
@@ -14,9 +15,13 @@ namespace CodeAudit
 {
 namespace SyntaxParser
 {
+    Token latestToken;
     void yyerror (char *s)
     {
-        printf ("%s\n", s);
+        cout << s;
+        cout << " ";
+        cout << "<" << latestToken.name <<" "<<latestToken.attribute << ">";
+        cout << " at " << latestToken.pos << endl;
     }
     int yylex();
     
@@ -58,18 +63,22 @@ namespace SyntaxParser
 %token DEC "--"
 %token PTR_MBR "->"
 %token STRING;
+%token CHAR;
 %token PREPROC;
 %token RETURN;
+%token VOID;
+%token SIZEOF;
+%token OTHER_KEYWORD;
 //%token INFIX_OP '=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|=" "==" "!="
 
 %%
 
-input:  /* empty */ { 
+syntax:  /* empty */ { 
         auto ast = new ASTTree;
         ASTCallback(ast);
         $$ = ast;
     }
-        | input global_def {
+        | syntax global_def {
                 ASTTree* root = (ASTTree*)$1;
                 root->globals->push_back((FunctionDefine*)$2);
                 $$ = root;
@@ -79,6 +88,7 @@ input:  /* empty */ {
 global_def: func_def { $$ = $1; }
     | var_def ';' { $$ = $1; }
     | preprocessor { $$ = $1; }
+    | func_declare { $$ = $1; }
 ;
 
 /* TokenNode */
@@ -123,11 +133,24 @@ pointer_type: type_name {
 
 type_name: TYPE { $$ = $1; }
     | ID { $$ = $1; }
+    | VOID { $$ = $1; }
 ;
 
 id: ID { $$ = $1; }
 ;
 
+/* FunctionDeclare */
+func_declare: type id '(' args_declare ')' ';'{
+        auto declare = new FunctionDeclare;
+        declare->type = (TypeNode*)$1;
+        declare->id = (TokenNode*)$2;
+        declare->args = ((ListNode<VariableDefine>*)$4)->list;
+        delete $4;
+        $$ = declare;
+    }
+;
+
+/* ListNode<VariableDefine> */
 args_declare: /* empty */ { $$ = new ListNode<VariableDefine>; }
     | args_declare_element {
         auto list = new ListNode<VariableDefine>;
@@ -147,6 +170,11 @@ args_declare_element: type id array_dimensions {
         ListNode<Expression>* arr = (ListNode<Expression>*)$3;
         arg->arrayDimensions = arr->list;
         delete arr;
+        $$ = arg;
+    }
+    | type {
+        auto arg = new VariableDefine((TypeNode*)$1, nullptr, nullptr);
+        arg->arrayDimensions = new vector<Expression*>;
         $$ = arg;
     }
 ;
@@ -195,6 +223,12 @@ statement: expr ';' {
     | for_struct { $$ = $1; }
     | while_struct { $$ = $1; }
     | RETURN expr ';' { $$ = new ReturnStatement((Expression*)$2); }
+    | RETURN ';' { $$ = new ReturnStatement(nullptr); }
+    | OTHER_KEYWORD ';' {
+        EXTRACT_TOKEN(keyword, $1)
+        $$ = new KeywordStatement(keyword);
+    }
+    | ';' { $$ = new EmptyStatement; }
 ;
 
 
@@ -259,6 +293,7 @@ expr: ID {
         $$ = new InfixExpr(op.name, (Expression*)$1, (Expression*)$3);
     }
     | func_call { $$ = $1; }
+    | sizeof { $$ = $1; }
 ;
 
 constant: NUMBER {
@@ -268,7 +303,12 @@ constant: NUMBER {
     | STRING {
         EXTRACT_TOKEN(str, $1)
         $$ = new Constant(str);
+    } 
+    | CHAR {
+        EXTRACT_TOKEN(chr, $1)
+        $$ = new Constant(chr);
     }
+;
 
 array_subscript: expr '[' expr ']' {
         $$ =  new ArraySubscript((Expression*)$1, (Expression*)$3);
@@ -329,6 +369,21 @@ func_call: ID '(' args_sequence ')' {
         $$ = new FunctionInvokeNode(id, (ListNode<Expression>*)$3);
     }
 ;
+
+sizeof: SIZEOF '(' expr ')' {
+        EXTRACT_TOKEN(id, $1)
+        auto listNode = new ListNode<Expression>;
+        listNode->list->push_back((Expression*)$3);
+        $$ = new FunctionInvokeNode(id, listNode);
+    }
+    |  SIZEOF '(' type ')' {
+        EXTRACT_TOKEN(id, $1)
+        auto listNode = new ListNode<Expression>;
+        listNode->list->push_back((Expression*)$3);
+        $$ = new FunctionInvokeNode(id, listNode);
+    }
+;
+
 /* ListNode<Expression> */
 args_sequence: /* empty */ { $$ = new ListNode<Expression>; }
     | expr {
@@ -434,11 +489,11 @@ var_def_element: id array_dimensions var_def_init {
 /* Expression */
 var_def_init: /* empty */ { $$ = nullptr; }
     | ASSIGN expr { $$ = $2; }
-    | ASSIGN struct_init { $$ = $2; }
+    | ASSIGN element_init { $$ = $2; }
 ;
 
 /* StructInit */
-struct_init: '{' struct_elements '}' {
+element_init: '{' element_seq '}' {
         auto init = new StructInit;
         ListNode<Expression>* elements = (ListNode<Expression>*)$2;
         init->elements = elements->list;
@@ -448,13 +503,19 @@ struct_init: '{' struct_elements '}' {
 ;
 
 /* ListNode<Expression> */
-struct_elements: /* empty */ { $$ = new ListNode<Expression>; }
+element_seq: /* empty */ { $$ = new ListNode<Expression>; }
+    | element_init { $$ = $1; }
     | expr {
         auto elements = new ListNode<Expression>;
         elements->list->push_back((Expression*)$1);
         $$ = elements;
     }
-    | struct_elements ',' expr {
+    | element_seq ',' expr {
+        ListNode<Expression>* elements = (ListNode<Expression>*)$1;
+        elements->list->push_back((Expression*)$3);
+        $$ = elements;
+    }
+    | element_seq ',' element_init {
         ListNode<Expression>* elements = (ListNode<Expression>*)$1;
         elements->list->push_back((Expression*)$3);
         $$ = elements;
@@ -508,13 +569,14 @@ void reset_parser()
     TokenMap["long long"] = TYPE;
     TokenMap["float"] = TYPE;
     TokenMap["double"] = TYPE;
-    TokenMap["void"] = TYPE;
+    TokenMap["void"] = VOID;
     TokenMap["unsigned"] = UNSIGNED;
     TokenMap["if"] = IF;
     TokenMap["else if"] = ELSEIF;
     TokenMap["else"] = ELSE;
     TokenMap["for"] = FOR;
     TokenMap["while"] = WHILE;
+    TokenMap["sizeof"] = SIZEOF;
     TokenMap["||"] = OR;
     TokenMap["&&"] = AND;
     TokenMap["<"] = TokenMap[">"] = TokenMap["<="] = TokenMap[">="] = CMPR;
@@ -534,9 +596,13 @@ void reset_parser()
     TokenMap["++"] = INC;
     TokenMap["--"] = DEC;
     TokenMap["->"] = PTR_MBR;
-    TokenMap["string"] = STRING;
+    TokenMap["const-string"] = STRING;
+    TokenMap["const-char"] = CHAR;
     TokenMap["preprocessor"] = PREPROC;
     TokenMap["return"] = RETURN;
+    TokenMap["break"]
+        =TokenMap["continue"]
+        = OTHER_KEYWORD;
 }
 
 int yylex()
@@ -544,6 +610,8 @@ int yylex()
     auto t = (int)idx >= (int)(TokenList->size());
     if(t)
         return 0;
+    
+    latestToken = TokenList->at(idx);
 
     if(subIdx < 0)
     {

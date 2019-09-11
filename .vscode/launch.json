@@ -8,9 +8,8 @@
             "name": "(gdb) Launch",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/test/bin/diff_tree",
             "args": [
-                "./test/data/syntaxA.c",
+                "./test/data/syntax.c",
                 "./test/data/syntaxB.c"
             ],
             "stopAtEntry": false,
@@ -26,7 +25,7 @@
                 }
             ],
             "windows": {
-                "program": "/mnt/f/Project/C++/code-audit/test/bin/ast_diff",
+                "program": "/mnt/f/Project/C++/code-audit/test/bin/test_parser",
                 "cwd": "/mnt/f/Project/C++/code-audit",
                 "pipeTransport": {
                     "pipeCwd": "",

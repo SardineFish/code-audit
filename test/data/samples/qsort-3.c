@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef int elemType;
+#define elemType int
 int Partition(elemType a[],int low,int high){
     int pivot = a[low];                         //����ǰ���е�һ��Ԫ����Ϊ����ֵ���Ա����л���
     while(low < high){                          //low > high����ѭ��
