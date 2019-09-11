@@ -148,7 +148,7 @@
 <{ {>
 <id printf>
 <( (>
-<string "Hello World!\n">
+<const-string "Hello World!\n">
 <) )>
 <; ;>
 <} }>

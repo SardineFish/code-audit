@@ -14,11 +14,14 @@ module.exports.test = function (path, args, input)
         const child = spawn(`${path}`, args);
         if (input)
             child.stdin.write(input);
-        child.stdin.end();
         child.stdout.on("data", (data) =>
         {
             resolve(data.toString());
         });
+        child.on("exit", () => {
+            resolve(""); 
+        });
+        child.stdin.end();
     });
     /*
     //console.log([`"${path}"`, ...args.map(arg => `"${arg.replace(/"/g,'\\"').replace(/\\/g,'\\\\')}"`)].join(" "));
