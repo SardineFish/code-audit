@@ -16,7 +16,7 @@ vector<DiffChanges> mergeChanges(vector<DiffChanges>& changes)
         {
             endDeletePtr++;
         }
-        for (auto changesPtr = startDeletePtr; changesPtr < endDeletePtr && *p == DIFF_ADD; changesPtr++)
+        for (auto changesPtr = startDeletePtr; changesPtr < endDeletePtr && p < changes.end() && *p == DIFF_ADD; changesPtr++)
         {
             p = changes.erase(p);
             *changesPtr = DIFF_RPL;

@@ -26,6 +26,7 @@ public:
     typedef bool (*Comparer)(const ChildPtr *, const ChildPtr *);
     NodeType type;
     T element;
+    ComparableNode(T element): type(CMPR_SEQ), element(element){}
     ComparableNode(NodeType type, T element) : type(type), element(element){}
     ~ComparableNode()
     {

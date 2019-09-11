@@ -17,6 +17,7 @@ struct Token
 class Lexer
 {
 public:
+    typedef vector<Token> TokenList;
     Lexer();
     void lex(string source, vector<Token>& tokenList);
 

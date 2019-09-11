@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/test/bin/diff_tree",
             "args": [
-                "./test/data/syntax.c"
+                "./test/data/syntaxA.c",
+                "./test/data/syntaxB.c"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -25,7 +26,7 @@
                 }
             ],
             "windows": {
-                "program": "/mnt/f/Project/C++/code-audit/test/bin/test_parser",
+                "program": "/mnt/f/Project/C++/code-audit/test/bin/ast_diff",
                 "cwd": "/mnt/f/Project/C++/code-audit",
                 "pipeTransport": {
                     "pipeCwd": "",
