@@ -29,4 +29,10 @@ void Lexer::lex(string source, vector<Token>& tokens)
     lexer(cstr);
 }
 
+Lexer::TokenList Lexer::lex(string source)
+{
+    Lexer::TokenList list;
+    this->lex(source, list);
+    return list;
+}
 }

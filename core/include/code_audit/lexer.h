@@ -21,6 +21,7 @@ public:
     typedef vector<Token> TokenList;
     Lexer();
     void lex(string source, vector<Token>& tokenList);
+    vector<Token> lex(string source);
 
 private:
 };

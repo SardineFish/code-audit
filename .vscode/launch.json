@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "args": [
-                "./test/data/syntax.c",
+                "./test/data/audit.c",
                 "./test/data/syntaxB.c"
             ],
             "stopAtEntry": false,
@@ -38,7 +38,7 @@
                 }
             },
             "linux": {
-                "program": "${workspaceRoot}/test/bin/diff_tree",
+                "program": "${workspaceRoot}/test/bin/audit_test",
                 "cwd": "${workspaceFolder}"
             }
             
