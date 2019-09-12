@@ -1,4 +1,5 @@
 #include "code_audit/syntax_analyser.h"
+#include<cstdio>
 
 using namespace CodeAudit;
 
@@ -18,4 +19,9 @@ int main(int argc, char** argv)
 
     auto analyser = new SyntaxBasedAnalyser;
     auto vulns = analyser->audit(source);
+    for(auto & vuln : vulns)
+    {
+        printf("At:%d,%d: %s\n", vuln.line, vuln.column, vuln.description.c_str());
+    }
+    return 0;
 }

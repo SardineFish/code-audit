@@ -151,6 +151,8 @@ public:
     virtual bool tryAudit(ASTNode *node, string &description, int &pos, Context *context) override;
 };
 
+int evaluate(Expression *expr);
+
 VariableTracker *extractVariable(Expression *expr, Context *context);
 
 Constant *extractConstant(Expression *expr);

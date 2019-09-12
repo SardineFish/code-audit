@@ -99,7 +99,6 @@ int evaluate(Expression *expr)
 {
     try
     {
-
         if (auto constant = dynamic_cast<Constant *>(expr))
         {
             return stoi(constant->value);
@@ -148,9 +147,11 @@ bool OperatorAuditor::tryAudit(ASTNode *node, string &description, int &pos, Con
 
 VariableTracker *extractVariable(Expression *expr, Context* context)
 {
+    if(expr == nullptr)
+        return nullptr;
     if (auto var = dynamic_cast<Variable *>(expr))
     {
-        if(auto tracker = context->findVariable(var->token.name))
+        if(auto tracker = context->findVariable(var->name))
             return tracker;
         return nullptr;
     }
@@ -167,6 +168,8 @@ VariableTracker *extractVariable(Expression *expr, Context* context)
 
 Constant *extractConstant(Expression *expr)
 {
+    if (expr == nullptr)
+        return nullptr;
     if (auto var = dynamic_cast<Constant *>(expr))
         return var;
     else if (auto prefix = dynamic_cast<PrefixExpr *>(expr))
@@ -180,6 +183,8 @@ Constant *extractConstant(Expression *expr)
 
 FunctionInvokeNode *extractFunctionCall(Expression* expr)
 {
+    if (expr == nullptr)
+        return nullptr;
     if (auto call = dynamic_cast<FunctionInvokeNode *>(expr))
         return call;
     else if (auto prefix = dynamic_cast<PrefixExpr *>(expr))
@@ -192,6 +197,8 @@ FunctionInvokeNode *extractFunctionCall(Expression* expr)
 
 int locateExpression(Expression *expr)
 {
+    if (expr == nullptr)
+        return 0;
     if (auto var = dynamic_cast<Constant *>(expr))
         return var->token.pos;
     else if (auto var = dynamic_cast<Variable*>(expr))
@@ -213,6 +220,8 @@ int locateExpression(Expression *expr)
 
 TypeNode* getTypeOf(Expression *expr, Context* context)
 {
+    if (expr == nullptr)
+        return nullptr;
     if (auto var = dynamic_cast<Variable *>(expr))
     {
         if(auto track = context->findVariable(var->token.attribute))
@@ -241,7 +250,7 @@ TypeNode* getTypeOf(Expression *expr, Context* context)
 #define foreach(X, ARRAY) \
     for (auto &X : *(ARRAY))
 
-inline void runAuditors(SourceCode* source, vector<AuditorBase*>& auditors, ASTNode* node, vector<Vulnerability> vulns, Context* context)
+inline void runAuditors(SourceCode* source, vector<AuditorBase*>& auditors, ASTNode* node, vector<Vulnerability>& vulns, Context* context)
 {
     for (auto auditor : auditors)
     {
