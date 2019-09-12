@@ -19,5 +19,10 @@ int main()
     read(stdin, buffer, 10);
     sscanf(str1, "012345678910\n", &buffer);
     fscanf(stdin, "012345678910\n", &buffer);
+
+    int int32 = 5;
+    short int16 = 10;
+    int16 = int32;
+    
     return 0;
 }

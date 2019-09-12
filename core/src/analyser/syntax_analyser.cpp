@@ -157,8 +157,26 @@ void initAuditors(CodeAudit *auditor)
                     addTag(lvar, new HeapAlloc());
                 }
             }
+            if(evaluateSize(lhs, context) < evaluateSize(rhs, context))
+            {
+                char buffer[1024];
+                sprintf(buffer, "size of '%s' is larger than size of '%s', sign overflow might happen.", rhs->toString().c_str(), lhs->toString().c_str());
+                description = string(buffer);
+                return true;
+            }
         }
     });
+
+    auditor->addAuditor(new Auditor<VariableDefine>(1, [=](VariableDefine *def, string &description, int &pos, Context *context) -> bool {
+        auto var = context->findVariable(def->id->token.attribute);
+        if (auto call = extractFunctionCall(def->initValue))
+        {
+            if (call->name == "malloc" || call->name == "calloc" || call->name == "realloc")
+            {
+                addTag(var, new HeapAlloc());
+            }
+        }
+    }));
 
     auditor->addAuditor(functionAuditor);
     auditor->addAuditor(operatorAuditor);

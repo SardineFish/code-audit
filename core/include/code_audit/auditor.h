@@ -163,6 +163,8 @@ TypeNode *getTypeOf(Expression *expr, Context *context);
 
 int locateExpression(Expression *expr);
 
+int evaluateSize(Expression *expr, Context *context);
+
 } // namespace CodeAudit
 
 #endif

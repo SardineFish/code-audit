@@ -218,6 +218,44 @@ int locateExpression(Expression *expr)
     return 0;
 }
 
+int evaluateSize(TypeNode* type)
+{
+    if(type->pointerLevel>0)
+        return sizeof(void *);
+    if (type->type.attribute == "char")
+        return sizeof(char);
+    else if (type->type.attribute == "short")
+        return sizeof(short);
+    else if (type->type.attribute == "int")
+        return sizeof(int);
+    else if (type->type.attribute == "long")
+        return sizeof(long);
+    else if (type->type.attribute == "long long")
+        return sizeof(long long);
+    else
+        return 0;
+}
+
+int evaluateSize(Expression* expr, Context* context)
+{
+    if (auto var = dynamic_cast<Variable *>(expr))
+    {
+        if(auto tracker = context->findVariable(var->name))
+        {
+            return evaluateSize(tracker->type);
+        }
+    }
+    else if (auto cast = dynamic_cast<TypeCast*>(expr))
+    {
+        return evaluateSize(cast->type);
+    }
+    else if (auto num = evaluate(expr))
+    {
+        return sizeof(int);
+    }
+    return 0;
+}
+
 TypeNode* getTypeOf(Expression *expr, Context* context)
 {
     if (expr == nullptr)
