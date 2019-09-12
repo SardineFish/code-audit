@@ -24,6 +24,7 @@ ANY     (.|{NL})
 (else{SPACE}if)                         token("else if", yytext);
 (long{SPACE}long|long{SPACE}long{SPACE}int)                       token("long long", yytext);
 (void|char|short|int|long|unsigned|double|float|if|else|for|while|do|break|continue|return|switch|case|default|sizeof)    token(yytext, yytext);
+(NULL)                                  token("null", yytext);
 {ID}                                    token("id", yytext);
 (0x[0-9A-Fa-f]+L?)|({DIGIT}+L?)((\.({DIGIT}+))?)((e(\+|-)?({DIGIT}+))?f?)           token("number", yytext);
 ((->)|(\+\+|--)|(\|\||&&)|((\+|-|\*|\/|%|=|&|\||\^|<<|>>|<|>|=|!|~)=?)|(\?|:|,|\.|;)) token(yytext, yytext);

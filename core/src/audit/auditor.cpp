@@ -147,22 +147,29 @@ bool OperatorAuditor::tryAudit(ASTNode *node, string &description, int &pos, Con
 
 VariableTracker *extractVariable(Expression *expr, Context* context)
 {
-    if(expr == nullptr)
+    if(auto var = extractVariable(expr))
+    {
+        return context->findVariable(var->name);
+    }
+    return nullptr;
+}
+
+Variable* extractVariable(Expression* expr)
+{
+    if (expr == nullptr)
         return nullptr;
     if (auto var = dynamic_cast<Variable *>(expr))
     {
-        if(auto tracker = context->findVariable(var->name))
-            return tracker;
-        return nullptr;
+        return var;
     }
     else if (auto prefix = dynamic_cast<PrefixExpr *>(expr))
-        return extractVariable(prefix->expr, context);
+        return extractVariable(prefix->expr);
     else if (auto subfix = dynamic_cast<SubfixExpr *>(expr))
-        return extractVariable(subfix->expr, context);
+        return extractVariable(subfix->expr);
     else if (auto arr = dynamic_cast<ArraySubscript *>(expr))
-        return extractVariable(arr->target, context);
-    else if (auto cast = dynamic_cast<TypeCast*>(expr))
-        return extractVariable(cast->target, context);
+        return extractVariable(arr->target);
+    else if (auto cast = dynamic_cast<TypeCast *>(expr))
+        return extractVariable(cast->target);
     return nullptr;
 }
 
@@ -308,6 +315,21 @@ inline void runAuditors(SourceCode* source, vector<AuditorBase*>& auditors, ASTN
 
 void auditInternal(SourceCode *source, ASTNode *node, vector<AuditorBase *> &auditors, vector<Vulnerability> &vulns, Context *context)
 {
+    // handle variable definition before others to record variables into context.
+    if (auto var = dynamic_cast<VariableDefine *>(node))
+    {
+        auto track = new VariableTracker(var->type, var->id->token);
+        if (var->arrayDimensions->size() > 0)
+        {
+            Tag<ArrayVar>::add(track, new ArrayVar(evaluate(var->arrayDimensions->at(0))));
+        }
+        if (context->upper == nullptr)
+            Tag<GlobalVariable>::add(track, new GlobalVariable);
+        else
+            Tag<StackAlloc>::add(track, new StackAlloc);
+        context->addVar(track);
+    }
+
     runAuditors(source, auditors, node, vulns, context);
     if (auto ast = dynamic_cast<ASTTree *>(node))
     {
@@ -319,19 +341,6 @@ void auditInternal(SourceCode *source, ASTNode *node, vector<AuditorBase *> &aud
     {
         foreach (var, def->vars)
             AUDIT(var);
-    }
-    AUDIT_FOR(VariableDefine, var)
-    {
-        auto track = new VariableTracker(var->type, var->id->token);
-        if (var->arrayDimensions->size() > 0)
-        {
-            Tag<ArrayVar>::add(track, new ArrayVar(evaluate(var->arrayDimensions->at(0))));
-        }
-        if(context->upper == nullptr)
-            Tag<GlobalVariable>::add(track, new GlobalVariable);
-        else
-            Tag<StackAlloc>::add(track, new StackAlloc);
-        context->addVar(track);
     }
     AUDIT_FOR(FunctionDefine, func)
     {

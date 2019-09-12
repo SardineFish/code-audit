@@ -23,6 +23,12 @@ int main()
     int int32 = 5;
     short int16 = 10;
     int16 = int32;
-    
+
+    char *p = NULL;
+    gets(p);
+
+    printf("%d %s %s %s", p, buffer, text, int32);
+    printf("%d %s %s %s", p);
+
     return 0;
 }

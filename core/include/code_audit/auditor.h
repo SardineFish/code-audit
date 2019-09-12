@@ -101,6 +101,7 @@ template void addTag<ArrayVar>(VariableTracker *var, ArrayVar *tag);
 DEFINE_VAR_TAG(StackAlloc)
 DEFINE_VAR_TAG(HeapAlloc)
 DEFINE_VAR_TAG(GlobalVariable)
+DEFINE_VAR_TAG(NullPtr)
 
 class VariableTracker
 {
@@ -154,6 +155,7 @@ public:
 int evaluate(Expression *expr);
 
 VariableTracker *extractVariable(Expression *expr, Context *context);
+Variable *extractVariable(Expression *expr);
 
 Constant *extractConstant(Expression *expr);
 

@@ -69,6 +69,7 @@ namespace SyntaxParser
 %token VOID;
 %token SIZEOF;
 %token OTHER_KEYWORD;
+%token NULL_PTR;
 //%token INFIX_OP '=' "+=" "-=" "*=" "/=" "%=" "<<=" ">>=" "&=" "^=" "|=" "==" "!="
 
 %%
@@ -307,6 +308,10 @@ constant: NUMBER {
     | CHAR {
         EXTRACT_TOKEN(chr, $1)
         $$ = new Constant(chr);
+    }
+    | NULL_PTR {
+        EXTRACT_TOKEN(nullPtr, $1)
+        $$ = new Constant(nullPtr);
     }
 ;
 
@@ -603,6 +608,7 @@ void reset_parser()
     TokenMap["break"]
         =TokenMap["continue"]
         = OTHER_KEYWORD;
+    TokenMap["null"] = NULL_PTR;
 }
 
 int yylex()

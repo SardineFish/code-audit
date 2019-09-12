@@ -5,6 +5,7 @@
 #include "code_audit/auditor.h"
 #include <set>
 #include <cstdint>
+#include <regex>
 
 using namespace std;
 using namespace CodeAudit::SyntaxParser;
@@ -111,6 +112,7 @@ void initAuditors(CodeAudit *auditor)
 {
     auto functionAuditor = new FunctionAuditor(1);
     auto operatorAuditor = new OperatorAuditor(1);
+    auto formatAuditor = new FunctionAuditor(1);
 
     functionAuditor->addAuditor("strcpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1]);
@@ -146,6 +148,31 @@ void initAuditors(CodeAudit *auditor)
         return bufferOverflowAudit(description, context, args[2], nullptr);
     });
 
+    formatAuditor->addAuditor("printf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+        regex reg("%.");
+        smatch match;
+        auto format = extractConstant(args[0])->value;
+        int idx = 1;
+        while(regex_search(format, match, reg))
+        {
+            auto var = extractVariable(args[idx], context);
+            if (!var)
+            {
+                description = "Arguments missmatch with format strings.";
+                return true;
+            }
+            // %s with non-string
+            auto arr = getTag<ArrayVar>(var);
+            if (match.str() == "%s" && !((var->type->toString() == "char*") || (var->type->toString() == "char" && getTag<ArrayVar>(var))))
+            {
+                description = "Non-string variable with format string %s.";
+                return true;
+            }
+            format = match.suffix();
+            idx++;
+        }
+    });
+
     operatorAuditor->addAuditor("=", [=](Expression *lhs, Expression *rhs, string &description, Context *context) -> bool {
         auto lvar = extractVariable(lhs, context);
         if(lvar)
@@ -155,6 +182,15 @@ void initAuditors(CodeAudit *auditor)
                 if (call->name == "malloc" || call->name == "calloc" || call->name == "realloc")
                 {
                     addTag(lvar, new HeapAlloc());
+                }
+                if(lvar->type->pointerLevel>0)
+                    addTag(lvar, new NullPtr());
+            }
+            if (auto constant = extractConstant(rhs))
+            {
+                if (constant->token.name == "null")
+                {
+                    addTag(lvar, new NullPtr());
                 }
             }
             if(evaluateSize(lhs, context) < evaluateSize(rhs, context))
@@ -176,10 +212,33 @@ void initAuditors(CodeAudit *auditor)
                 addTag(var, new HeapAlloc());
             }
         }
+        if(auto constant = extractConstant(def->initValue))
+        {
+            if(constant->token.name == "null")
+            {
+                addTag(var, new NullPtr());
+            }
+        }
+    }));
+
+    auditor->addAuditor(new Auditor<FunctionInvokeNode>(1, [=](FunctionInvokeNode *call, string &description, int &pos, Context *context) -> bool {
+        for(auto & arg : *(call->args->list))
+        {
+            if(auto var = extractVariable(arg, context))
+            {
+                if(getTag<NullPtr>(var))
+                {
+                    pos = extractVariable(arg)->token.pos;
+                    description = "Use of NULL variable.";
+                    return true;
+                }
+            }
+        }
     }));
 
     auditor->addAuditor(functionAuditor);
     auditor->addAuditor(operatorAuditor);
+    auditor->addAuditor(formatAuditor);
 }
 
 } // namespace CodeAudit
