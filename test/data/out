@@ -1,19 +1,14 @@
-<preprocessor #pragma once \
-    t>
-<preprocessor #include<stdio\
-.h>>
-<preprocessor #define T a>
 <int int>
-<id a>
+<id _a>
 <= =>
 <number 0>
 <, ,>
-<id b>
+<id _b>
 <= =>
 <number 5>
 <; ;>
 <long long>
-<id l>
+<id _l>
 <= =>
 <number 0x8000000L>
 <; ;>
@@ -27,10 +22,10 @@
 <( (>
 <char char>
 <* *>
-<id x>
+<id _x>
 <, ,>
 <int int>
-<id y>
+<id _y>
 <) )>
 <{ {>
 <* *>
@@ -38,11 +33,11 @@
 <int int>
 <* *>
 <) )>
-<id x>
+<id _x>
 <+= +=>
-<id x>
+<id _x>
 <[ [>
-<id y>
+<id _y>
 <+ +>
 <number 5>
 <] ]>
@@ -56,7 +51,7 @@
 <; ;>
 <id i>
 << <>
-<id y>
+<id _y>
 <; ;>
 <id i>
 <++ ++>
@@ -129,7 +124,7 @@
 <id loop>
 <( (>
 <& &>
-<id x>
+<id _x>
 <) )>
 <; ;>
 <} }>
@@ -148,7 +143,7 @@
 <{ {>
 <id printf>
 <( (>
-<string "Hello World!\n">
+<const-string "Hello World!\n">
 <) )>
 <; ;>
 <} }>

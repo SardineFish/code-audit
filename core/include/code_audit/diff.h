@@ -1,5 +1,8 @@
 #pragma once
 
+#ifndef DIFF_MODULE
+#define DIFF_MODULE
+
 #include <vector>
 #include <string>
 #include <functional>
@@ -132,3 +135,4 @@ vector<DiffChanges> diff(T *src, T *dst, int lenSrc, int lenDst, vector<DiffChan
 vector<DiffChanges> mergeChanges(vector<DiffChanges> &changes);
 
 } // namespace CodeAudit
+#endif

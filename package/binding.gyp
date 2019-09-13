@@ -2,14 +2,20 @@
     "targets": [
         {
             "target_name": "code_audit",
-            "sources": ["src/module.cpp"],
+            "sources": ["src/module.cpp", "src/object_wrapper.cpp"],
             'include_dirs': [
               "<!@(node -p \"require('node-addon-api').include\")",
               "../core/include"
             ],
-            'libraries': [
-              "<(module_root_dir)/../core/bin/libcode_audit_core_static.a"
-            ],
+            "link_settings": {
+               "libraries": [
+                 "-lcode_audit_core",
+               ],
+               "ldflags": [
+                   "-L<(module_root_dir)/../core/bin",
+                   "-Wl,-rpath,<(module_root_dir)/../core/bin",
+               ]
+             },
             'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
             'cflags!': [ '-fno-exceptions' ],
             'cflags_cc!': [ '-fno-exceptions', '-fno-rtti' ],

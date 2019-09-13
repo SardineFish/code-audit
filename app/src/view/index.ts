@@ -1,3 +1,3 @@
-import codeAudit = require("code-audit");
+import codeAudit from "code-audit";
 
-document.write(codeAudit.default.helloWorld());
+document.write(codeAudit.helloWorld());
