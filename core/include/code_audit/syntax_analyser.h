@@ -1,7 +1,5 @@
 #pragma once
 #include "analyser_base.h"
-#include "compare_tree.h"
-#include "parser.h"
 #include "auditor.h"
 
 using namespace CodeAudit::SyntaxParser;
@@ -17,7 +15,5 @@ class SyntaxBasedAnalyser:public CodeAnanyser
       vector<Vulnerability> audit(SourceCode *source);
       vector<Vulnerability> audit(string source);
 };
-
-ComparableTree<string>* createDiffTree(ASTTree* ast);
 
 }

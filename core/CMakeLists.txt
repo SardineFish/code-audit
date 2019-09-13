@@ -22,3 +22,4 @@ add_compile_options(-g)
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
 add_library(code_audit_core SHARED ${SOURCES})
+add_library(code_audit_core_static STATIC ${SOURCES})

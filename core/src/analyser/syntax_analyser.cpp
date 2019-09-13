@@ -14,6 +14,7 @@ namespace CodeAudit
 {
 
 void initAuditors(CodeAudit *auditor);
+ComparableTree<string> *createDiffTree(ASTTree *ast);
 
 double SyntaxBasedAnalyser::calcSimilarity(string source, string sample)
 {
