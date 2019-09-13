@@ -18,8 +18,10 @@ module.exports.test = function (path, args, input)
         {
             resolve(data.toString());
         });
-        child.on("exit", () => {
-            resolve(""); 
+        child.stdout.on("close", () => {
+            setTimeout(() => {
+                resolve(""); 
+            });
         });
         child.stdin.end();
     });

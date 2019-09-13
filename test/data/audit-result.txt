@@ -1,0 +1,24 @@
+At:24,5: 'longStr' is larger than 'shortStr', overflow will happen on stack.
+At:25,5: Source 'shortStr' is smaller than size: 100, overflow will happen on stack.
+At:26,5: Source 'shortStr' is smaller than size: 100, overflow will happen on stack.
+At:27,5: Usage of unsafe function, memory overflow might happen on stack.
+At:28,5: Source 'shortStr' is smaller than size: 100, overflow will happen on stack.
+At:29,5: "12345678901234567890123456789\n" is larger than 'shortStr', overflow will happen on stack.
+At:30,5: Usage of unsafe function, memory overflow might happen on stack.
+At:31,5: 'longStr' is larger than 'shortStr', overflow will happen on stack.
+At:34,5: Usage of unsafe function, memory overflow might happen on heap.
+At:35,5: Usage of unsafe function, memory overflow might happen on heap.
+At:36,5: Destination 'bufferOnHeap' is smaller than size: 10, overflow will happen on heap.
+At:44,5: size of 'longInt' is larger than size of 'shortInt', sign overflow might happen.
+At:45,5: size of '(long long)(shortInt)' is larger than size of 'longInt', sign overflow might happen.
+At:46,5: Usage of unsafe function, memory overflow might happen on stack.
+At:46,5: Use signed interger 'shortInt' as unsigned parameter.
+At:48,5: Usage of unsafe function, memory overflow might happen on stack.
+At:55,10: Use of variable 'p', which could be value of NULL.
+At:57,14: Dereference pointer 'ptr', which could be value of NULL.
+At:61,28: Use of variable 'ptr', which could be value of NULL.
+At:61,5: Non-string variable with format string %s.
+At:61,28: Dereference pointer 'ptr', which could be value of NULL.
+At:62,28: Use of variable 'ptr', which could be value of NULL.
+At:62,5: Arguments missmatch with format strings.
+At:62,28: Dereference pointer 'ptr', which could be value of NULL.

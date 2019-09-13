@@ -108,43 +108,58 @@ inline bool bufferOverflowAudit(string &description, Context *context, Expressio
     return false;
 }
 
+inline bool signOverflowAudit(Expression* expr, string &description, Context *context)
+{
+    if (auto var = extractVariable(expr, context))
+    {
+        if (var->type->sign)
+        {
+            char buffer[1024];
+            sprintf(buffer, "Use signed interger '%s' as unsigned parameter.", var->name.c_str());
+            description = string(buffer);
+            return true;
+        }
+    }
+}
+
 void initAuditors(CodeAudit *auditor)
 {
-    auto functionAuditor = new FunctionAuditor(1);
+    auto bufferOverflowAuditor = new FunctionAuditor(1);
     auto operatorAuditor = new OperatorAuditor(1);
     auto formatAuditor = new FunctionAuditor(1);
+    auto intergerOverflowAuditor = new FunctionAuditor(1);
 
-    functionAuditor->addAuditor("strcpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("strcpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1]);
     });
-    functionAuditor->addAuditor("strncpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("strncpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1], evaluate(args[2]));
     });
-    functionAuditor->addAuditor("memcpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("memcpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1], evaluate(args[2]));
     });
-    functionAuditor->addAuditor("strcat", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("strcat", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1]);
     });
-    functionAuditor->addAuditor("strncat", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("strncat", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1], evaluate(args[2]));
     });
-    functionAuditor->addAuditor("sprintf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("sprintf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1]);
     });
-    functionAuditor->addAuditor("vsprintf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("vsprintf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], args[1]);
     });
-    functionAuditor->addAuditor("gets", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("gets", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[0], nullptr);
     });
-    functionAuditor->addAuditor("read", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("read", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[1], nullptr, evaluate(args[2]));
     });
-    functionAuditor->addAuditor("sscanf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("sscanf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[2], args[0]);
     });
-    functionAuditor->addAuditor("fscanf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+    bufferOverflowAuditor->addAuditor("fscanf", [=](vector<Expression *> args, string &description, Context *context) -> bool {
         return bufferOverflowAudit(description, context, args[2], nullptr);
     });
 
@@ -173,6 +188,19 @@ void initAuditors(CodeAudit *auditor)
         }
     });
 
+    intergerOverflowAuditor->addAuditor("memcpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+        return signOverflowAudit(args[2], description, context);
+    });
+    intergerOverflowAuditor->addAuditor("strncpy", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+        return signOverflowAudit(args[2], description, context);
+    });
+    intergerOverflowAuditor->addAuditor("strncat", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+        return signOverflowAudit(args[2], description, context);
+    });
+    intergerOverflowAuditor->addAuditor("read", [=](vector<Expression *> args, string &description, Context *context) -> bool {
+        return signOverflowAudit(args[2], description, context);
+    });
+
     operatorAuditor->addAuditor("=", [=](Expression *lhs, Expression *rhs, string &description, Context *context) -> bool {
         auto lvar = extractVariable(lhs, context);
         if(lvar)
@@ -182,6 +210,8 @@ void initAuditors(CodeAudit *auditor)
                 if (call->name == "malloc" || call->name == "calloc" || call->name == "realloc")
                 {
                     addTag(lvar, new HeapAlloc());
+                    if (int size = evaluate(call->args->list->at(0)))
+                        addTag(lvar, new ArrayVar(size));
                 }
                 if(lvar->type->pointerLevel>0)
                     addTag(lvar, new NullPtr());
@@ -205,14 +235,26 @@ void initAuditors(CodeAudit *auditor)
 
     auditor->addAuditor(new Auditor<VariableDefine>(1, [=](VariableDefine *def, string &description, int &pos, Context *context) -> bool {
         auto var = context->findVariable(def->id->token.attribute);
+        // Add heap tag to 
+        // type* x = malloc(size) or calloc, realloc, etc.
         if (auto call = extractFunctionCall(def->initValue))
         {
             if (call->name == "malloc" || call->name == "calloc" || call->name == "realloc")
             {
                 addTag(var, new HeapAlloc());
+                if(int size = evaluate(call->args->list->at(0)))
+                    addTag(var, new ArrayVar(size));
+            }
+            // Add nullable tag to:
+            // type* x = nullable_func();
+            else
+            {
+                addTag(var, new NullPtr());
             }
         }
-        if(auto constant = extractConstant(def->initValue))
+        // Add nullable tag to:
+        // type* x = NULL;
+        if (auto constant = extractConstant(def->initValue))
         {
             if(constant->token.name == "null")
             {
@@ -229,16 +271,36 @@ void initAuditors(CodeAudit *auditor)
                 if(getTag<NullPtr>(var))
                 {
                     pos = extractVariable(arg)->token.pos;
-                    description = "Use of NULL variable.";
+                    char buffer[1024];
+                    sprintf(buffer, "Use of variable '%s', which could be value of NULL.", var->name.c_str());
+                    description = string(buffer);
                     return true;
                 }
             }
         }
     }));
 
-    auditor->addAuditor(functionAuditor);
+    auditor->addAuditor(new Auditor<PrefixExpr>(1, [=](PrefixExpr *expr, string &description, int &pos, Context *context) -> bool {
+        if(expr->op.attribute == "*")
+        {
+            if(auto var = extractVariable(expr->expr, context))
+            {
+                if (getTag<NullPtr>(var))
+                {
+                    char buffer[1024];
+                    sprintf(buffer, "Dereference pointer '%s', which could be value of NULL.", var->name.c_str());
+                    pos = extractVariable(expr->expr)->token.pos;
+                    description = string(buffer);
+                    return true;
+                }
+            }
+        }
+    }));
+
+    auditor->addAuditor(bufferOverflowAuditor);
     auditor->addAuditor(operatorAuditor);
     auditor->addAuditor(formatAuditor);
+    auditor->addAuditor(intergerOverflowAuditor);
 }
 
 } // namespace CodeAudit

@@ -11,8 +11,8 @@ describe("Diff", () =>
         const result = await test(Path.resolve("./bin/diff_tree"), [], "");
         const numbers = result.split("\n").map(str => parseFloat(str));
         expect(numbers).length.least(2);
-        expect(numbers[0] - numbers[1] < 0.001).be.equal(true);
-        expect(parseFloat(numbers[0]- 0.714286) < 0.001).be.equal(true);
+        expect(numbers[0] - 0.714286).lessThan(0.001);
+        expect(numbers[0] - numbers[1]).lessThan(0.001);
     });
     for (let idx = 0; idx < 5; idx++)
     {

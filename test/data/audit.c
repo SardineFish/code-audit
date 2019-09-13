@@ -2,33 +2,64 @@
 #include <string.h>
 #include <stdlib.h>
 
+int* getNull()
+{
+    return NULL;
+}
+
+void func(int *p)
+{
+
+}
+
 int main()
 {
-    char *text;
-    text = (char *)malloc(100000);
     char buffer[5];
-    char str1[10], str2[30];
-    strcpy(str1, str2);
-    strncpy(text, str1, 100);
-    memcpy(text, str1, 100);
-    strcat(text, str1);
-    strncat(text, str1, 100);
-    sprintf(str1, "12345678901234567890123456789\n");
-    vsprintf(str1, "1\n", NULL);
-    gets(text);
-    read(stdin, buffer, 10);
-    sscanf(str1, "012345678910\n", &buffer);
-    fscanf(stdin, "012345678910\n", &buffer);
+    char shortStr[10];
+    char longStr[30];
+    char *text;
+    char *bufferOnHeap = (char *)malloc(5);
 
-    int int32 = 5;
-    short int16 = 10;
-    int16 = int32;
+    // Buffer overflow audit
+    strcpy(shortStr, longStr);      // write large string into small buffer.
+    strncpy(text, shortStr, 100);   // copy large from small buffer.
+    memcpy(text, shortStr, 100);    // copy large from small buffer.
+    strcat(text, longStr);          // write into buffer with unknown size.
+    strncat(text, shortStr, 100);   // copy large from small buffer into unknown buffer.
+    sprintf(shortStr, "12345678901234567890123456789\n"); // write large string constant into small buffer.
+    fscanf(stdin, "012345678910\n", &buffer);             // write large string constant into small buffer.
+    sscanf(longStr, "%s", &shortStr);                     // read large string into small buffer
+    
+    // Heap overflow
+    vsprintf(bufferOnHeap, "1\n", NULL);    // write string constant into unknown buffer on heap.
+    gets(bufferOnHeap);                     // write into buffer on heap.
+    read(stdin, bufferOnHeap, 10);          // write into small buffer on heap.
 
+
+    // Interger overflow audit
+    int longInt = 5;
+    short shortInt = 10;
+    unsigned int size = 0;
+
+    shortInt = longInt;                     // Interger size overflow
+    longInt = (long long)shortInt;          // Ingerger size overflow
+    memcpy(longStr, shortStr, shortInt);    // Interger sign overflow
+    longInt = shortInt;                     // No vulnerability
+    memcpy(longStr, shortStr, size);        // Buffer overflow only
+
+    // Null audit
     char *p = NULL;
-    gets(p);
+    int *ptr = getNull();
+    char *notNull = (char *)malloc(sizeof(char) * 100);
 
-    printf("%d %s %s %s", p, buffer, text, int32);
-    printf("%d %s %s %s", p);
+    func(p);            // Use null pointer as parameter.
+    func(notNull);      // No vulnerability
+    int x = *ptr + 6; // Dereference null pointer.
+    x = *notNull + 6;
 
+    // Format string audit
+    printf("%d %s %s %s", *ptr, buffer, text, longInt);    // use %s for int
+    printf("%d %s %s %s", *ptr);   // More format strings.
+    
     return 0;
 }

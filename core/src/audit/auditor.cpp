@@ -315,6 +315,8 @@ inline void runAuditors(SourceCode* source, vector<AuditorBase*>& auditors, ASTN
 
 void auditInternal(SourceCode *source, ASTNode *node, vector<AuditorBase *> &auditors, vector<Vulnerability> &vulns, Context *context)
 {
+    if(node == nullptr)
+        return;
     // handle variable definition before others to record variables into context.
     if (auto var = dynamic_cast<VariableDefine *>(node))
     {
@@ -341,6 +343,12 @@ void auditInternal(SourceCode *source, ASTNode *node, vector<AuditorBase *> &aud
     {
         foreach (var, def->vars)
             AUDIT(var);
+    }
+    AUDIT_FOR(VariableDefine, var)
+    {
+        foreach (d, var->arrayDimensions)
+            AUDIT(d);
+        AUDIT(var->initValue);
     }
     AUDIT_FOR(FunctionDefine, func)
     {
@@ -423,6 +431,8 @@ INSTANT_AUDITOR(Constant)
 INSTANT_AUDITOR(VariableDefine)
 INSTANT_AUDITOR(Variable)
 INSTANT_AUDITOR(FunctionInvokeNode)
+INSTANT_AUDITOR(PrefixExpr)
+INSTANT_AUDITOR(SubfixExpr)
 
 
 } // namespace CodeAudit
