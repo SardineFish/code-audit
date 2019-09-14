@@ -15,7 +15,7 @@ Napi::Array wrapVulns(Env env, const vector<Vulnerability>& vulns)
     auto arr = Array::New(env, vulns.size());
     for (size_t i = 0; i < vulns.size();i++)
     {
-        arr.Set(i, wrapVuln(vulns[i]));
+        arr.Set(i, wrapVuln(env, vulns[i]));
     }
     return arr;
 }

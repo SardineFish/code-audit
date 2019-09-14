@@ -17,6 +17,7 @@ exports.analyser = {
     },
     syntax: {
         similarity: codeAuditCore.syntaxSimilarity,
+        audit: codeAuditCore.audit,
     },
     helloWorld: codeAuditCore.helloWorld,
 };

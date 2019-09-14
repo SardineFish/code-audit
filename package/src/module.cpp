@@ -109,7 +109,8 @@ Value audit(const CallbackInfo &info)
     string src = info[0].As<String>();
     auto analyser = new SyntaxBasedAnalyser;
     auto results = analyser->audit(src);
-    return wrapvulns
+    delete analyser;
+    return wrapVulns(info.Env(), results);
 }
 
 String helloWorld(const CallbackInfo& info)
@@ -125,6 +126,7 @@ Object Init(Env env, Object exports)
     exports.Set("stringSimilarity", Function::New(env, stringSimilarity));
     exports.Set("tokenSimilarity", Function::New(env, tokenSimilarity));
     exports.Set("syntaxSimilarity", Function::New(env, syntaxSimilarity));
+    exports.Set("audit", Function::New(env, audit));
     exportDefault.Set("helloWorld", Function::New(env, helloWorld));
     exports.Set("default", exportDefault);
     return exports;

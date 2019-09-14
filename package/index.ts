@@ -52,6 +52,7 @@ export const analyser = {
     },
     syntax: <SyntaxBasedAnalyser>{
         similarity: codeAuditCore.syntaxSimilarity,
+        audit: codeAuditCore.audit,
     },
     helloWorld: <() => string>codeAuditCore.helloWorld,
 };

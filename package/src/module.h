@@ -6,4 +6,5 @@ using namespace std;
 using namespace Napi;
 using namespace CodeAudit;
 
-Napi::Object wrapVuln(Vulnerability vuln);
+Napi::Object wrapVuln(Env env, Vulnerability vuln);
+Napi::Array wrapVulns(Env env, const vector<Vulnerability> &vulns);
