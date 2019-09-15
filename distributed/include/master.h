@@ -18,6 +18,7 @@ namespace Distributed
 namespace Master
 {
 
+const int DefaultPort = 17385;
 const int VERSION = 1;
 
 enum NodeStatus
@@ -45,10 +46,11 @@ class Task
 {
 public:
     int id;
-    TaskStatus status;
-    NodeInfo *processor;
-    TaskMessage *params;
-    Message *result;
+    TaskStatus status = TASK_PENDING;
+    NodeInfo *processor = nullptr;
+    TaskMessage *params = nullptr;
+    Message *result = nullptr;
+    function<void(Task *)> callback;
 };
 
 class NodeInfo
@@ -59,22 +61,27 @@ public:
     Network net;
     Task *task;
     NodeInfo(int socket, sockaddr_in addr, string name);
-    void process(Task &task);
+    bool process(Task &task);
     void complete(Message &result);
 };
 
 class CodeAuditMaster
 {
 public:
-    void scan(int timeout);
+    bool start();
+    void stop();
+    bool scan(int timeout);
     Task *similarity(AnalyserType analyser, string source, string sample, function<void(double)> callback);
     Task *audit(string source, function<void(vector<Vulnerability>)> callback);
 private:
     int globalId = 0;
+    int sock;
     queue<Task *> pendingTasks;
     map<int, Task *> runningTasks;
     queue<NodeInfo *> availableNodes;
     vector<NodeInfo *> nodes;
+    void update();
+    void recv();
 };
 
 } // namespace Master

@@ -58,7 +58,7 @@ public:
     virtual size_t deserialize(const char *buffer, size_t pos, size_t size) override;
 };
 
-enum TaskType
+enum TaskType : int
 {
     TASK_REQUEST = 1,
     TASK_RESULT = 2,

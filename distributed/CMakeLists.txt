@@ -25,6 +25,8 @@ file(GLOB SOURCES
 
 add_library(code_audit_distributed SHARED ${SOURCES})
 
-add_executable(dist_node src/test.cpp)
+add_executable(dist_node src/node/node.cpp)
+add_executable(dist_master src/master/test.cpp)
 
 target_link_libraries(dist_node code_audit_core code_audit_distributed)
+target_link_libraries(dist_master code_audit_core code_audit_distributed)
