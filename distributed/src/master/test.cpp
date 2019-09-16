@@ -36,7 +36,7 @@ int main(int argc, char**argv)
 
         for (int i = 0; i < N; i++)
         {
-            master->similarity(AnalyserType::ANALYSE_TOKEN, source, sample, [=](double similarity) -> void {
+            master->similarity(AnalyserType::ANALYSE_TOKEN, source, sample, [=](Task* task, double similarity) -> void {
                 cout << similarity << endl;
                 completed++;
                 if(completed == N)
@@ -58,7 +58,7 @@ int main(int argc, char**argv)
         fs.close();
         string source = string(buffer);
 
-        master->audit(source, [](vector<Vulnerability> vulns) -> void {
+        master->audit(source, [](Task* task, vector<Vulnerability> vulns) -> void {
             auto x = 1;
         });
     }

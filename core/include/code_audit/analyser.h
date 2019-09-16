@@ -8,9 +8,9 @@ namespace CodeAudit
 {
 enum AnalyserType
 {
-    ANALYSE_STRING_CHAR,
-    ANALYSE_STRING_LINE,
-    ANALYSE_TOKEN,
-    ANALYSE_SYNTAX,
+    ANALYSE_STRING_LINE = 0,
+    ANALYSE_STRING_CHAR = 1,
+    ANALYSE_TOKEN = 2,
+    ANALYSE_SYNTAX = 3,
 };
 }

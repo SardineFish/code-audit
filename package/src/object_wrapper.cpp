@@ -1,5 +1,4 @@
 #include "module.h"
-
 Napi::Object wrapVuln(Env env, Vulnerability vuln)
 {
     auto obj = Object::New(env);
@@ -16,6 +15,24 @@ Napi::Array wrapVulns(Env env, const vector<Vulnerability>& vulns)
     for (size_t i = 0; i < vulns.size();i++)
     {
         arr.Set(i, wrapVuln(env, vulns[i]));
+    }
+    return arr;
+}
+
+Napi::Object wrapNode(Env env, const NodeInfo* node)
+{
+    auto obj = Object::New(env);
+    obj.Set("name", String::New(env, node->name));
+    obj.Set("port", Number::New(env, node->net.addr.sin_port));
+    return obj;
+}
+
+Napi::Array wrapNodes(Env env, const vector<NodeInfo*>& nodes)
+{
+    auto arr = Array::New(env, nodes.size());
+    for (size_t i = 0; i < nodes.size(); i++)
+    {
+        arr.Set(i, wrapNode(env, nodes[i]));
     }
     return arr;
 }

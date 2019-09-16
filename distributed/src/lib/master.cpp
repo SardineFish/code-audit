@@ -9,6 +9,17 @@ using namespace std;
 using namespace CodeAudit;
 using namespace CodeAudit::Distributed::Master;
 
+function<void(string)> globalLog;
+
+void setLogger(function<void(string)> logger)
+{
+    globalLog = logger;
+}
+void log(string msg)
+{
+    globalLog(msg);
+}
+
 namespace CodeAudit
 {
 namespace Distributed
@@ -111,7 +122,7 @@ bool CodeAuditMaster::scan(int timeout)
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t)) < 0)
     {
         int x = errno;
-        cout << "Fialed to set timeout." << endl;
+        cerr << "Fialed to set timeout." << endl;
         close(sock);
         return false;
     }
@@ -159,13 +170,15 @@ bool CodeAuditMaster::scan(int timeout)
     return true;
 }
 
-Task *CodeAuditMaster::similarity(AnalyserType analyser, string source, string sample, function<void(double)> callback)
+Task *CodeAuditMaster::similarity(AnalyserType analyser, string source, string sample, function<void(Task*, double)> callback, function<void(Task*)>init)
 {
     auto task = new Task;
     task->id = ++this->globalId;
+    if(init)
+        init(task);
     task->callback = [=](Task *t) -> void {
         auto result = dynamic_cast<SimilarityResult *>(t->result);
-        callback(result->similarity);
+        callback(t, result->similarity);
     };
     auto request = new SimilarityRequest;
     request->analyser = analyser;
@@ -182,14 +195,16 @@ Task *CodeAuditMaster::similarity(AnalyserType analyser, string source, string s
     return task;
 }
 
-Task *CodeAuditMaster::audit(string source, function<void(vector<Vulnerability>)> callback)
+Task *CodeAuditMaster::audit(string source, function<void(Task *, vector<Vulnerability>)> callback, function<void(Task *)> init)
 {
     auto task = new Task;
     task->id = ++this->globalId;
     task->callback = [=](Task *t) -> void {
         auto result = dynamic_cast<AuditResult *>(t->result);
-        callback(result->vulns);
+        callback(t, result->vulns);
     };
+    if(init)
+        init(task);
     auto request = new AuditRequest;
     request->source = source;
     auto msg = new TaskMessage;
@@ -220,6 +235,7 @@ void CodeAuditMaster::update()
         tasksMutex.lock();
         this->runningTasks[task->id] = task;
         tasksMutex.unlock();
+
 
         node->process(*task);
     }

@@ -15,8 +15,15 @@ export interface Token {
     attribute: string;
     position: string;
 }
+declare enum AnalyserType {
+    StringPerLine = 0,
+    StringPerChar = 1,
+    Token = 2,
+    Syntax = 3
+}
 interface Analyser {
     similarity: (source: string, sample: string) => number;
+    similarityAsync: (source: string, sample: string) => Promise<number>;
 }
 interface StringBasedAnalyser extends Analyser {
     diff: (source: string, destination: string) => DiffChanges[];
@@ -27,11 +34,25 @@ interface TokenBasedAnalyser extends Analyser {
 }
 interface SyntaxBasedAnalyser extends Analyser {
     audit: (source: string) => Vulnerability[];
+    auditAsync: (source: string) => Promise<Vulnerability[]>;
+}
+interface DistributedNode {
+    name: string;
+    port: number;
+}
+declare class DistributedController {
+    private master;
+    constructor();
+    scan(timeout: number): DistributedNode[];
+    start(): void;
+    similarity(analyser: AnalyserType, source: string, sample: string): Promise<number>;
+    audit(source: string): Promise<Vulnerability[]>;
 }
 export declare const analyser: {
     string: StringBasedAnalyser;
     token: TokenBasedAnalyser;
     syntax: SyntaxBasedAnalyser;
     helloWorld: () => string;
+    master: DistributedController;
 };
 export default analyser;

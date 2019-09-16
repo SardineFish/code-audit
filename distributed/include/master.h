@@ -82,8 +82,9 @@ public:
     void update();
     void recv();
     channel<int> updateChannel;
-    Task *similarity(AnalyserType analyser, string source, string sample, function<void(double)> callback);
-    Task *audit(string source, function<void(vector<Vulnerability>)> callback);
+    vector<NodeInfo *> nodes;
+    Task *similarity(AnalyserType analyser, string source, string sample, function<void(Task*, double)> callback, function<void(Task *)> init = nullptr);
+    Task *audit(string source, function<void(Task *, vector<Vulnerability>)> callback, function<void(Task *)> init = nullptr);
     thread *threadRecv;
     thread *threadUpdate;
 
@@ -95,7 +96,6 @@ private:
     queue<Task *> pendingTasks;
     map<int, Task *> runningTasks;
     queue<NodeInfo *> availableNodes;
-    vector<NodeInfo *> nodes;
 };
 
 } // namespace Master

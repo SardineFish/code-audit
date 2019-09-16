@@ -5,15 +5,19 @@
             "sources": ["src/module.cpp", "src/object_wrapper.cpp"],
             'include_dirs': [
               "<!@(node -p \"require('node-addon-api').include\")",
-              "../core/include"
+              "../core/include",
+              "../distributed/include"
             ],
             "link_settings": {
                "libraries": [
                  "-lcode_audit_core",
+                 "-lcode_audit_distributed",
                ],
                "ldflags": [
                    "-L<(module_root_dir)/../core/bin",
                    "-Wl,-rpath,<(module_root_dir)/../core/bin",
+                   "-L<(module_root_dir)/../distributed/bin",
+                   "-Wl,-rpath,<(module_root_dir)/../distributed/bin",
                ]
              },
             'dependencies': ["<!(node -p \"require('node-addon-api').gyp\")"],
