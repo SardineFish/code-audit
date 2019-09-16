@@ -6,6 +6,9 @@
 #include <map>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <mutex>
+#include <thread>
+#include "channel.h"
 
 #include "message.h"
 
@@ -42,6 +45,10 @@ struct Network
     int socket;
 };
 
+class Task;
+class NodeInfo;
+class CodeAuditMaster;
+
 class Task
 {
 public:
@@ -68,23 +75,30 @@ public:
 class CodeAuditMaster
 {
 public:
-    bool start();
+    bool init();
+    void start();
     void stop();
     bool scan(int timeout);
+    void update();
+    void recv();
+    channel<int> updateChannel;
     Task *similarity(AnalyserType analyser, string source, string sample, function<void(double)> callback);
     Task *audit(string source, function<void(vector<Vulnerability>)> callback);
+    thread *threadRecv;
+    thread *threadUpdate;
+
 private:
     int globalId = 0;
     int sock;
+    mutex tasksMutex;
+    mutex nodeMutex;
     queue<Task *> pendingTasks;
     map<int, Task *> runningTasks;
     queue<NodeInfo *> availableNodes;
     vector<NodeInfo *> nodes;
-    void update();
-    void recv();
 };
 
 } // namespace Master
-} // nmespace Distributed
+} // namespace Distributed
 
 } // namespace CodeAudit

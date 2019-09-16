@@ -2,9 +2,19 @@
 #include "unistd.h"
 #include <memory.h>
 #include "sys/socket.h"
+#include <thread>
+#include <condition_variable>
 
+using namespace std;
 using namespace CodeAudit;
 using namespace CodeAudit::Distributed::Master;
+
+namespace CodeAudit
+{
+namespace Distributed
+{
+namespace Master
+{
 
 NodeInfo::NodeInfo(int socket, sockaddr_in addr, string name)
 {
@@ -20,11 +30,11 @@ bool NodeInfo::process(Task &task)
     this->status = NODE_BUSY;
 
     char buffer[65507];
-    size_t size = 0;
+    ssize_t size = 0;
     task.processor = this;
     task.status = TASK_RUNNING;
     size = task.params->serialize(buffer, 0, sizeof(buffer));
-    if( size != sendto(this->net.socket, buffer, size, 0, (sockaddr *)&(this->net.addr), sizeof(this->net.addr)))
+    if (size != sendto(this->net.socket, buffer, size, 0, (sockaddr *)&(this->net.addr), sizeof(this->net.addr)))
     {
         cerr << "Failed to send task to " << this->name << endl;
         return false;
@@ -33,13 +43,13 @@ bool NodeInfo::process(Task &task)
     return true;
 }
 
-void NodeInfo::complete(Message&result)
+void NodeInfo::complete(Message &result)
 {
     this->status = NODE_IDLE;
     this->task = nullptr;
 }
 
-bool CodeAuditMaster::start()
+bool CodeAuditMaster::init()
 {
     sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock <= 0)
@@ -59,19 +69,48 @@ bool CodeAuditMaster::start()
     return true;
 }
 
+void continiousRecv(CodeAuditMaster* master)
+{
+    while (true)
+    {
+        master->recv();
+    }
+}
+
+void continiousUpdate(CodeAuditMaster* master)
+{
+    while (true)
+    {
+        int t;
+        master->updateChannel >> t;
+        master->update();
+    }
+}
+
+void CodeAuditMaster::start()
+{
+    this->threadRecv = new thread(continiousRecv, this);
+    this->threadUpdate = new thread(continiousUpdate, this);
+    this->threadRecv->detach();
+    this->threadUpdate->detach();
+}
+
 void CodeAuditMaster::stop()
 {
-    close(sock);
+    // this->threadRecv->join();
+    // this->threadUpdate->join();
+    //close(sock);
 }
 
 bool CodeAuditMaster::scan(int timeout)
 {
     // Set timeout
     timeval t;
-    t.tv_sec = 0;
-    t.tv_usec = timeout * 1000;
+    t.tv_sec = timeout / 1000;
+    t.tv_usec = timeout % 1000 * 1000;
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t)) < 0)
     {
+        int x = errno;
         cout << "Fialed to set timeout." << endl;
         close(sock);
         return false;
@@ -89,14 +128,14 @@ bool CodeAuditMaster::scan(int timeout)
     memcpy(buffer, &broadcast, sizeof(broadcast));
     sendto(sock, buffer, sizeof(broadcast), 0, (sockaddr *)&addr, sizeof(addr));
 
-    while(true)
+    while (true)
     {
         sockaddr_in remote;
         socklen_t addrlen = sizeof(remote);
-        size_t size = recvfrom(sock, buffer, sizeof(buffer), 0, (sockaddr *)&remote, &addrlen);
-        if(size <= 8)
+        ssize_t size = recvfrom(sock, buffer, sizeof(buffer), 0, (sockaddr *)&remote, &addrlen);
+        if (size <= 8)
         {
-            if(errno == EAGAIN)
+            if (errno == EAGAIN)
                 break;
             cerr << "Received wrong message." << endl;
             continue;
@@ -105,7 +144,7 @@ bool CodeAuditMaster::scan(int timeout)
         {
             SlaveHandshake handshake;
             handshake.deserialize(buffer, 0, size);
-            if(handshake.version != VERSION)
+            if (handshake.version != VERSION)
             {
                 cerr << "Unsupported client version." << endl;
                 sendto(sock, buffer, sizeof(1), 0, (sockaddr *)&remote, sizeof(remote));
@@ -116,7 +155,7 @@ bool CodeAuditMaster::scan(int timeout)
             this->availableNodes.push(node);
         }
     }
-    
+
     return true;
 }
 
@@ -136,12 +175,14 @@ Task *CodeAuditMaster::similarity(AnalyserType analyser, string source, string s
     msg->id = task->id;
     msg->params = request;
     msg->task = (TaskType)(TASK_REQUEST | TASK_SIMILARITY);
+    task->params = msg;
     this->pendingTasks.push(task);
-    this->update();
+    int t = 1;
+    this->updateChannel << t;
     return task;
 }
 
-Task *CodeAuditMaster::audit(string source, function<void(vector<Vulnerability>)>callback)
+Task *CodeAuditMaster::audit(string source, function<void(vector<Vulnerability>)> callback)
 {
     auto task = new Task;
     task->id = ++this->globalId;
@@ -155,56 +196,90 @@ Task *CodeAuditMaster::audit(string source, function<void(vector<Vulnerability>)
     msg->id = task->id;
     msg->params = request;
     msg->task = (TaskType)(TASK_REQUEST | TASK_AUDIT);
+    task->params = msg;
     this->pendingTasks.push(task);
-    this->update();
+    int t = 1;
+    this->updateChannel << t;
     return task;
 }
 
 void CodeAuditMaster::update()
 {
-    while(!this->pendingTasks.empty() && !this->availableNodes.empty())
+    while (!this->pendingTasks.empty() && !this->availableNodes.empty())
     {
+        tasksMutex.lock();
         auto task = this->pendingTasks.front();
         this->pendingTasks.pop();
+        tasksMutex.unlock();
+
+        nodeMutex.lock();
         auto node = this->availableNodes.front();
         this->availableNodes.pop();
-        node->process(*task);
+        nodeMutex.unlock();
+
+        tasksMutex.lock();
         this->runningTasks[task->id] = task;
+        tasksMutex.unlock();
+
+        node->process(*task);
     }
-
-
 }
 
 void CodeAuditMaster::recv()
 {
+    // Set timeout
+    timeval t;
+    t.tv_sec = 0;
+    t.tv_usec = 0;
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t)) < 0)
+    {
+        int x = errno;
+        cout << "Fialed to set timeout." << endl;
+        close(sock);
+        return;
+    }
+
     char buffer[65507];
-    while(true)
+    while (true)
     {
         sockaddr_in remote;
         socklen_t addrlen = sizeof(remote);
-        size_t size = recvfrom(sock, buffer, sizeof(buffer), 0, (sockaddr *)&remote, &addrlen);
-        if(size < 8)
+        ssize_t size = recvfrom(sock, buffer, sizeof(buffer), 0, (sockaddr *)&remote, &addrlen);
+        if (size < 8)
         {
             cerr << "Received wrong message." << endl;
             continue;
         }
         TaskMessage msg;
         size_t len = msg.deserialize(buffer, 0, size);
-        if(msg.task | TASK_AUDIT)
+        if (msg.task & TASK_AUDIT)
         {
             msg.params = new AuditResult;
         }
-        else if (msg.task |TASK_SIMILARITY)
+        else if (msg.task & TASK_SIMILARITY)
             msg.params = new SimilarityResult;
         msg.params->deserialize(buffer, len, size);
 
+        tasksMutex.lock();
         auto task = this->runningTasks[msg.id];
         this->runningTasks.erase(task->id);
+        tasksMutex.unlock();
+
         task->status = TASK_COMPLETED;
         task->processor->complete(*msg.params);
+        task->result = msg.params;
+
+        nodeMutex.lock();
         this->availableNodes.push(task->processor);
+        nodeMutex.unlock();
+        int t = 1;
+        this->updateChannel << t;
+
         task->callback(task);
         delete task;
         delete msg.params;
     }
 }
+} // namespace Master
+} // namespace Distributed
+} // namespace CodeAudit

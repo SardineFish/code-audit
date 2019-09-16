@@ -24,7 +24,7 @@ Restart:
 
     // Set address to be reuseable
     int optVal = 1;
-    if(setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &optVal, sizeof(optVal))  == -1)
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal)) == -1)
     {
         cerr << "Failed to reuse port." << endl;
         exit(1);
@@ -50,7 +50,7 @@ Restart:
     sockaddr_in sender;
     socklen_t addrlen = sizeof(sender);
     MasterBroadcast data;
-    size_t size = 0;
+    ssize_t size = 0;
     while(size ==0)
     {
         size = recvfrom(sock, &data, sizeof(data), 0, (sockaddr *)&sender, &addrlen);
@@ -77,6 +77,8 @@ Reconnect:
 
     // Send back handshake
     SlaveHandshake handshake;
+    handshake.name = this->name;
+    handshake.version = VERSION;
     size = handshake.serialize(buffer, 0, sizeof(buffer));
     if(sendto(sock, buffer, size, 0, (sockaddr *)&sender, sizeof(sender)) != size)
     {
@@ -84,9 +86,12 @@ Reconnect:
         goto Reconnect;
     }
 
+    cout << "Connected to master server." << endl;
+
     // 
     while(true)
     {
+        cout << "Waiting for tasks..." << endl;
         size = recvfrom(sock, &buffer, sizeof(buffer), 0, (sockaddr *)&sender, &addrlen);
         if(size < sizeof(int) * 2)
             goto Restart;
@@ -137,7 +142,6 @@ Reconnect:
             SyntaxBasedAnalyser analyser;
             auditResult->vulns = analyser.audit(request.source);
             result = auditResult;
-            delete auditResult;
         }
 
         msg.params = result;

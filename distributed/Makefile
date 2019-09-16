@@ -24,6 +24,7 @@ config:
 
 all:
 	cd ./build && make
+	echo "\nBuild Completed.\n"
 
 proto:
 	cd ./src/proto && \

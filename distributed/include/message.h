@@ -16,14 +16,6 @@ public:
     virtual size_t serialize(char *buffer, size_t pos, size_t size);
     virtual size_t deserialize(const char *buffer, size_t pos, size_t size);
 };
-
-enum AnalyserType {
-    ANALYSE_STRING_CHAR,
-    ANALYSE_STRING_LINE,
-    ANALYSE_TOKEN,
-    ANALYSE_SYNTAX,
-};
-
 class SimilarityRequest : public Message
 {
 public:

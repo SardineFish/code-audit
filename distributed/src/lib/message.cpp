@@ -11,6 +11,18 @@ size_t serializeVal(char *buffer, size_t pos, size_t size, T *value);
 template <typename T>
 size_t deserializeVal(const char *buffer, size_t pos, size_t size, T *value);
 
+template <>
+size_t serializeVal<string>(char *buffer, size_t pos, size_t size, string *value);
+
+template <>
+size_t deserializeVal<string>(const char *buffer, size_t pos, size_t size, string *value);
+
+template <>
+size_t serializeVal<vector<Vulnerability>>(char *buffer, size_t pos, size_t size, vector<Vulnerability> *vulns);
+
+template <>
+size_t deserializeVal<vector<Vulnerability>>(const char *buffer, size_t pos, size_t size, vector<Vulnerability> *vulns);
+
 size_t Message::serialize(char *buffer, size_t pos, size_t size)
 {
     return 0;
@@ -55,7 +67,7 @@ size_t AuditRequest::deserialize(const char* buffer, size_t pos, size_t size)
 
 size_t AuditResult::serialize(char* buffer, size_t pos, size_t size)
 {
-    return deserializeVal(buffer, pos, size, &vulns);
+    return serializeVal(buffer, pos, size, &vulns);
 }
 size_t AuditResult::deserialize(const char* buffer, size_t pos, size_t size)
 {
@@ -66,7 +78,8 @@ size_t TaskMessage::serialize(char *buffer, size_t pos, size_t size)
 {
     size_t len = serializeVal(buffer, pos, size, &id);
     len += serializeVal(buffer, pos + len, size, &task);
-    len += params->serialize(buffer, pos, size);
+    len += params->serialize(buffer, pos + len, size);
+    return len;
 }
 size_t TaskMessage::deserialize(const char* buffer, size_t pos, size_t size)
 {
@@ -78,19 +91,19 @@ size_t TaskMessage::deserialize(const char* buffer, size_t pos, size_t size)
 size_t SlaveHandshake::serialize(char* buffer, size_t pos, size_t size)
 {
     size_t len = serializeVal(buffer, pos, size, &version);
-    len += serializeVal(buffer, pos, size, &name);
+    len += serializeVal(buffer, pos + len, size, &name);
     return len;
 }
 size_t SlaveHandshake::deserialize(const char* buffer, size_t pos, size_t size)
 {
     size_t len = deserializeVal(buffer, pos, size, &version);
-    len += deserializeVal(buffer, pos, size, &name);
+    len += deserializeVal(buffer, pos + len, size, &name);
     return len;
 }
 
 inline size_t serialize(char *buffer, size_t pos, size_t bufSize, const void *value, size_t valSize)
 {
-    if(pos + valSize < bufSize)
+    if(pos + valSize > bufSize)
     {
         throw runtime_error("Buffer overflow");
     }
@@ -99,7 +112,7 @@ inline size_t serialize(char *buffer, size_t pos, size_t bufSize, const void *va
 }
 inline size_t deserialize(const char* buffer, size_t pos, size_t bufSize, void * value, size_t valSize)
 {
-    if (pos + valSize < bufSize)
+    if (pos + valSize > bufSize)
     {
         throw runtime_error("Buffer overflow");
     }
@@ -108,18 +121,18 @@ inline size_t deserialize(const char* buffer, size_t pos, size_t bufSize, void *
 }
 
 template <typename T>
-size_t serializeVal<T>(char *buffer, size_t pos, size_t size, T *value)
+size_t serializeVal(char *buffer, size_t pos, size_t size, T *value)
 {
     return serialize(buffer, pos, size, value, sizeof(T));
 }
 template <typename T>
-size_t deserializeVal<T>(const char* buffer, size_t pos, size_t size, T* value)
+size_t deserializeVal(const char *buffer, size_t pos, size_t size, T *value)
 {
     return deserialize(buffer, pos, size, value, sizeof(T));
 }
 
-template<>
-size_t serializeVal<string>(char*buffer, size_t pos, size_t size, string* value)
+template <>
+size_t serializeVal<string>(char *buffer, size_t pos, size_t size, string *value)
 {
     size_t strlen = value->size();
     const char *strBuf = value->c_str();
@@ -133,7 +146,9 @@ size_t deserializeVal<string>(const char* buffer, size_t pos, size_t size, strin
     size_t strlen;
     size_t len = deserialize(buffer, pos, size, &strlen, sizeof(size_t));
     char strbuf[strlen + 1];
+    strbuf[strlen] = 0;
     len += deserialize(buffer, pos + len, size, strbuf, strlen);
+    *value = string(strbuf);
     return len;
 }
 
@@ -164,6 +179,7 @@ size_t deserializeVal<vector<Vulnerability>>(const char* buffer, size_t pos, siz
         len += deserializeVal(buffer, pos + len, size, &(vuln.column));
         len += deserializeVal(buffer, pos + len, size, &(vuln.description));
         len += deserializeVal(buffer, pos + len, size, &(vuln.level));
+        vulns->push_back(vuln);
     }
     return len;
 }
