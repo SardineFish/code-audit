@@ -94,7 +94,11 @@ Reconnect:
         cout << "Waiting for tasks..." << endl;
         size = recvfrom(sock, &buffer, sizeof(buffer), 0, (sockaddr *)&sender, &addrlen);
         if(size < sizeof(int) * 2)
+        {
+            int t = 0;
+            sendto(sock, &t, sizeof(int), 0, (sockaddr *)&sender, sizeof(sockaddr_in));
             goto Restart;
+        }
         TaskMessage msg;
         size_t len = msg.deserialize(buffer, 0, size);
         Message *result;

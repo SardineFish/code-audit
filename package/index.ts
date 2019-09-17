@@ -72,6 +72,10 @@ class DistributedController
     {
         codeAuditCore.start(this.master);
     }
+    stop()
+    {
+        codeAuditCore.stop(this.master);
+    }
     similarity(analyser: AnalyserType, source: string, sample: string)
     {
         return new Promise<number>((resolve) => {

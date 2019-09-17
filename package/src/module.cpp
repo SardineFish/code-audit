@@ -154,6 +154,20 @@ Value start(const CallbackInfo&info)
     return info.Env().Undefined();
 }
 
+Value stop(const CallbackInfo &info)
+{
+    if (info.Length() < 1 || !info[0].IsExternal())
+    {
+        TypeError::New(info.Env(), "Usage: scan(master: MasterController, timeout: number)")
+            .ThrowAsJavaScriptException();
+        return info.Env().Undefined();
+    }
+    auto obj = info[0].As<External<CodeAuditMaster>>();
+    auto master = obj.Data();
+    master->stop();
+    return info.Env().Undefined();
+}
+
 map<int, ThreadSafeFunction> tsfns;
 
 Value similarityAsync(const CallbackInfo &info)
@@ -241,6 +255,7 @@ Object Init(Env env, Object exports)
     exports.Set("initMaster", Function::New(env, initMaster));
     exports.Set("scan", Function::New(env, scan));
     exports.Set("start", Function::New(env, start));
+    exports.Set("stop", Function::New(env, stop));
     exports.Set("similarityAsync", Function::New(env, similarityAsync));
     exports.Set("auditAsync", Function::New(env, auditAsync));
     exportDefault.Set("helloWorld", Function::New(env, helloWorld));

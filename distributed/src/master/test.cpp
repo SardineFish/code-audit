@@ -62,6 +62,7 @@ int main(int argc, char**argv)
             auto x = 1;
         });
     }
-    sleep(10);
+    sleep(5);
     master->stop();
+    return 0;
 }

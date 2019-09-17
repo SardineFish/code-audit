@@ -130,11 +130,13 @@ class App extends React.Component<{}, AppState>
             distributed: enable
         });
         if (enable)
-        {    
+        {
+
         }
     }
     scan()
     {
+        console.log("scan");
         const nodes = CodeAudit.master.scan(500);
         this.setState({
             nodes: nodes.map((node, idx) => {

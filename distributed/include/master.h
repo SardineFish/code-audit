@@ -81,6 +81,7 @@ public:
     bool scan(int timeout);
     void update();
     void recv();
+    bool running = false;
     channel<int> updateChannel;
     vector<NodeInfo *> nodes;
     Task *similarity(AnalyserType analyser, string source, string sample, function<void(Task*, double)> callback, function<void(Task *)> init = nullptr);

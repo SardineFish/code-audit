@@ -82,39 +82,61 @@ bool CodeAuditMaster::init()
 
 void continiousRecv(CodeAuditMaster* master)
 {
-    while (true)
-    {
-        master->recv();
-    }
+    cout << "recv start" << endl;
+    master->recv();
+    cout << "recv stopped" << endl;
 }
 
 void continiousUpdate(CodeAuditMaster* master)
 {
-    while (true)
+    cout << "update start" << endl;
+    while (master->running)
     {
         int t;
         master->updateChannel >> t;
         master->update();
     }
+    cout << "update stopped" << endl;
 }
 
 void CodeAuditMaster::start()
 {
+    this->running = true;
     this->threadRecv = new thread(continiousRecv, this);
     this->threadUpdate = new thread(continiousUpdate, this);
-    this->threadRecv->detach();
-    this->threadUpdate->detach();
+    //this->threadRecv->detach();
+    //this->threadUpdate->detach();
 }
 
 void CodeAuditMaster::stop()
 {
-    // this->threadRecv->join();
-    // this->threadUpdate->join();
+    this->running = false;
+    this->nodeMutex.lock();
+    int t = 0;
+    for(auto & node : this->nodes)
+    {
+        sendto(node->net.socket, &t, sizeof(t), 0, (sockaddr *)&(node->net.addr), sizeof(sockaddr_in));
+    }
+    this->nodeMutex.unlock();
+    close(sock);
+    this->updateChannel << t;
+    this->threadRecv->join();
+    this->threadUpdate->join();
     //close(sock);
 }
 
 bool CodeAuditMaster::scan(int timeout)
 {
+    if (this->running)
+    {
+        this->stop();
+        this->init();
+        this->nodeMutex.lock();
+        this->nodes.clear();
+        while (!this->availableNodes.empty())
+            this->availableNodes.pop();
+        this->nodeMutex.unlock();
+    }
     // Set timeout
     timeval t;
     t.tv_sec = timeout / 1000;
@@ -166,7 +188,6 @@ bool CodeAuditMaster::scan(int timeout)
             this->availableNodes.push(node);
         }
     }
-
     return true;
 }
 
@@ -220,7 +241,7 @@ Task *CodeAuditMaster::audit(string source, function<void(Task *, vector<Vulnera
 
 void CodeAuditMaster::update()
 {
-    while (!this->pendingTasks.empty() && !this->availableNodes.empty())
+    while (this->running && !this->pendingTasks.empty() && !this->availableNodes.empty())
     {
         tasksMutex.lock();
         auto task = this->pendingTasks.front();
@@ -245,7 +266,7 @@ void CodeAuditMaster::recv()
 {
     // Set timeout
     timeval t;
-    t.tv_sec = 0;
+    t.tv_sec = 5;
     t.tv_usec = 0;
     if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &t, sizeof(t)) < 0)
     {
@@ -256,13 +277,15 @@ void CodeAuditMaster::recv()
     }
 
     char buffer[65507];
-    while (true)
+    while (this->running)
     {
         sockaddr_in remote;
         socklen_t addrlen = sizeof(remote);
         ssize_t size = recvfrom(sock, buffer, sizeof(buffer), 0, (sockaddr *)&remote, &addrlen);
         if (size < 8)
         {
+            if (errno == EAGAIN)
+                continue;
             cerr << "Received wrong message." << endl;
             continue;
         }

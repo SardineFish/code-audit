@@ -34,6 +34,9 @@ class DistributedController {
     start() {
         codeAuditCore.start(this.master);
     }
+    stop() {
+        codeAuditCore.stop(this.master);
+    }
     similarity(analyser, source, sample) {
         return new Promise((resolve) => {
             codeAuditCore.similarityAsync(this.master, analyser, source, sample, (similarity) => {

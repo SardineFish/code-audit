@@ -45,6 +45,7 @@ declare class DistributedController {
     constructor();
     scan(timeout: number): DistributedNode[];
     start(): void;
+    stop(): void;
     similarity(analyser: AnalyserType, source: string, sample: string): Promise<number>;
     audit(source: string): Promise<Vulnerability[]>;
 }
