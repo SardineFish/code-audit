@@ -28,24 +28,24 @@ enum AnalyserType
     Syntax = 3,
 }
 
-interface Analyser
+export interface Analyser
 {
     similarity: (source: string, sample: string) => number;
     similarityAsync: (source: string, sample: string) => Promise<number>;
 }
 
-interface StringBasedAnalyser extends Analyser
+export interface StringBasedAnalyser extends Analyser
 {
     diff: (source: string, destination: string) => DiffChanges[];    
 }
 
-interface TokenBasedAnalyser extends Analyser
+export interface TokenBasedAnalyser extends Analyser
 {
     diff: (source: string, destination: string) => DiffChanges[];    
     analyse: (source: string) => Token[];
 }
 
-interface SyntaxBasedAnalyser extends Analyser
+export interface SyntaxBasedAnalyser extends Analyser
 {
     audit: (source: string) => Vulnerability[];   
     auditAsync: (source: string) => Promise<Vulnerability[]>;

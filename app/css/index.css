@@ -1,0 +1,20 @@
+@import url(../node_modules/antd/dist/antd.css);
+
+body{
+    background-color: #fafafa;
+}
+
+.page{
+    background-color: #fafafa;
+}
+.block {
+    margin: 10px 0;
+}
+
+.diff-editors {
+    display: flex;
+    flex-flow: row nowrap;
+}
+.diff-editors .spacer{
+    width: 2em;
+}

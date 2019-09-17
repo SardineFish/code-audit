@@ -58,8 +58,8 @@ int main()
     x = *notNull + 6;
 
     // Format string audit
-    printf("%d %s %s %s", *ptr, buffer, text, longInt);    // use %s for int
-    printf("%d %s %s %s", *ptr);   // More format strings.
+    // printf("%d %s %s %s", *ptr, buffer, text, longInt);    // use %s for int
+    // printf("%d %s %s %s", *ptr);   // More format strings.
     
     return 0;
 }

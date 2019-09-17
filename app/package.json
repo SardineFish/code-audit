@@ -17,6 +17,11 @@
     "electron-rebuild": "^1.8.6"
   },
   "dependencies": {
-    "code-audit": "file:../package"
+    "@types/react-dom": "^16.9.0",
+    "antd": "^3.23.3",
+    "code-audit": "file:../package",
+    "linq": "^3.2.1",
+    "react": "^16.9.0",
+    "react-dom": "^16.9.0"
   }
 }
