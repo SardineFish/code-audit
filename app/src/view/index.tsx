@@ -20,7 +20,9 @@ import "brace/theme/github";
 import Text from "antd/lib/typography/Text";
 import Title from "antd/lib/typography/Title";
 import { setTimeoutAsync } from "../components/utils";
-
+window.onclose = () => {
+    CodeAudit.master.stop();  
+};
 type NodeDataSource = {
     key: string,
     name: string,
@@ -98,21 +100,9 @@ class App extends React.Component<{}, AppState>
     {
         super(props);
         this.state = {
-            page: "",
+            page: "dist",
             distributed: false,
-            nodes: [{
-                key: "1",
-                name: "Name",
-                port: 1234
-            }, {
-                    key: "2",
-                    name: "Name",
-                    port: 1234
-                }, {
-                    key: "3",
-                    name: "Name",
-                    port: 1234
-                }],
+            nodes: [],
             analyser: "string",
             similarity: 0,
             diffSample: "",
@@ -285,7 +275,7 @@ class App extends React.Component<{}, AppState>
                 }}
             >
                 <Sider>
-                    <Menu theme="dark" onSelect={(e) => this.setState({page:e.key})}>
+                    <Menu theme="dark" defaultSelectedKeys={["dist"]} onSelect={(e) => this.setState({page:e.key})}>
                         <Menu.Item key="dist">
                             <Icon type="cloud-server" />
                             <span>Distributed Node</span>
