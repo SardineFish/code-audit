@@ -9,6 +9,7 @@
     "build:native": "npx node-gyp build",
     "build:index": "npx tsc",
     "rebuild": "npx node-gyp rebuild",
+    "configure": "npx node-gyp configure",
     "postinstall": "npx node-gyp configure"
   },
   "author": "SardineFish",

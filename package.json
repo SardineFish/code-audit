@@ -4,8 +4,14 @@
   "description": "A tool to provide code audit for C/C++.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build:module": "node-gyp build -d"
+    "test": "cd test && make config && make && npm test",
+    "build:core": "cd core && make config && make",
+    "build:dist": "cd distributed && make config && make",
+    "build:module": "cd package && npm run configure && npm run build",
+    "build:test": "cd test && make config && make",
+    "build:app": "cd app && npm install && npm run build",
+    "build": "npm run build:core && npm run build:dist && npm run build:module && npm run build:test && npm run build:app",
+    "start": "cd app && npm start"
   },
   "keywords": [
     "code-audit",

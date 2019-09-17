@@ -19,6 +19,3 @@ At:57,14: Dereference pointer 'ptr', which could be value of NULL.
 At:61,28: Use of variable 'ptr', which could be value of NULL.
 At:61,5: Non-string variable with format string %s.
 At:61,28: Dereference pointer 'ptr', which could be value of NULL.
-At:62,28: Use of variable 'ptr', which could be value of NULL.
-At:62,5: Arguments missmatch with format strings.
-At:62,28: Dereference pointer 'ptr', which could be value of NULL.
