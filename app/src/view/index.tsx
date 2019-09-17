@@ -367,26 +367,31 @@ class App extends React.Component<{}, AppState>
                     </Page>
                     <Page visible={this.state.page==="audit"}>
                         <PageHeader title="Code Audit">
-                            <AceEditor
-                                mode="c_cpp"
-                                theme="github"
-                                onChange={(str) => this.audit(str)}
-                                value={this.state.auditSource}
-                                fontSize={16}
-                                width=""
-                                height="400px"
-                            />
-                            <List
-                                size="small"
-                                header={<Title level={4}>Vulnerabilities</Title>}
-                                bordered
-                                dataSource={this.state.vulns}
-                                renderItem={item => (
-                                    <List.Item>
-                                        {`At:${item.line},${item.column}: ${item.description}`}
-                                    </List.Item>
-                                )}
-                            ></List>
+                            <div className="audit">
+                                <AceEditor
+                                    mode="c_cpp"
+                                    theme="github"
+                                    onChange={(str) => this.audit(str)}
+                                    value={this.state.auditSource}
+                                    fontSize={16}
+                                    width=""
+                                    height="360px"
+                                />
+                                <div className="block vulns-wrapper">
+                                    <Title level={4}>Vulnerabilities</Title>
+                                    <div className="vulns scroll-view">
+                                        <List
+                                            size="small"
+                                            dataSource={this.state.vulns}
+                                            renderItem={item => (
+                                                <List.Item>
+                                                    {`At:${item.line},${item.column}: ${item.description}`}
+                                                </List.Item>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         </PageHeader>
                     </Page>
                 </Layout>

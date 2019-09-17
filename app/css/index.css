@@ -18,3 +18,12 @@ body{
 .diff-editors .spacer{
     width: 2em;
 }
+
+.ant-layout {
+    background-color: #fafafa;
+}
+
+.vulns {
+    height: 160px;
+    overflow: auto;
+}
