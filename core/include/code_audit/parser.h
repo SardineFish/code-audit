@@ -12,6 +12,7 @@ class ASTNode
 {
   public:
     virtual string toString();
+    virtual string toASTString(int level);
 };
 
 class TokenNode : public ASTNode
@@ -21,6 +22,7 @@ class TokenNode : public ASTNode
     TokenNode();
     TokenNode(Token t);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class Expression : public ASTNode
@@ -35,6 +37,7 @@ class TypeNode : public Expression
     int pointerLevel = 0;
     TypeNode(bool sign, Token type);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class StructInit : public Expression
@@ -42,6 +45,7 @@ class StructInit : public Expression
   public:
     vector<Expression*>* elements;
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class PrefixExpr : public Expression 
@@ -51,6 +55,7 @@ class PrefixExpr : public Expression
     Expression* expr;
     PrefixExpr(Token op, Expression* expr);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 class SubfixExpr : public Expression
 {
@@ -59,6 +64,7 @@ class SubfixExpr : public Expression
     Expression* expr;
     SubfixExpr(Expression* expr, Token op);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class ArraySubscript : public Expression
@@ -68,6 +74,7 @@ class ArraySubscript : public Expression
     Expression* subscript;
     ArraySubscript(Expression* target, Expression* subscript);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class TypeCast : public Expression
@@ -77,6 +84,7 @@ class TypeCast : public Expression
     Expression* target;
     TypeCast(TypeNode* type, Expression* target);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class InfixExpr : public Expression
@@ -87,6 +95,7 @@ class InfixExpr : public Expression
     Expression* right;
     InfixExpr(string op, Expression* left, Expression* right);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class Statement : public ASTNode
@@ -114,6 +123,7 @@ class ExpressionStatement : public Statement
   public:
     Expression* expression;
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 template <class T>
@@ -128,6 +138,7 @@ class BlockNode : public ASTNode
   public:
     vector<Statement*>* statements = new vector<Statement*>;
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class Variable : public Expression
@@ -137,6 +148,7 @@ class Variable : public Expression
     Token token;
     Variable(Token t);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class Constant : public Expression
@@ -146,6 +158,7 @@ class Constant : public Expression
     Token token;
     Constant(Token t);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class VariableDefine : public Expression
@@ -157,6 +170,7 @@ class VariableDefine : public Expression
     vector<Expression*>* arrayDimensions;
     VariableDefine(TypeNode* type, TokenNode* id, Expression* value);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class VariableDefStatement : public Statement
@@ -164,6 +178,7 @@ class VariableDefStatement : public Statement
   public:
     vector<VariableDefine*>* vars = new vector<VariableDefine*>;
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class FunctionDeclare : public Statement
@@ -183,6 +198,7 @@ class FunctionInvokeNode : public Expression
     ListNode<Expression>* args;
     FunctionInvokeNode(Token id, ListNode<Expression>* args);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class ParameterNode : public ASTNode
@@ -201,6 +217,7 @@ class FunctionDefine : public Statement
     vector<VariableDefine*>* args;
     BlockNode* body;
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class ReturnStatement : public Statement
@@ -209,6 +226,7 @@ class ReturnStatement : public Statement
     Expression* expr;
     ReturnStatement(Expression* expr);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class ConditionStructure : public Statement
@@ -216,7 +234,8 @@ class ConditionStructure : public Statement
   public:
     Expression* condition;
     BlockNode* body;
-    ConditionStructure(Expression* condition, BlockNode* body);
+    ConditionStructure(Expression *condition, BlockNode *body);
+    virtual string toASTString(int level) override;
 };
 
 class If : public ConditionStructure
@@ -226,6 +245,7 @@ class If : public ConditionStructure
     BlockNode* elseBody;
     If(Expression* condition, BlockNode* body);
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class ForLoop : public Statement
@@ -236,6 +256,7 @@ class ForLoop : public Statement
     Expression* s3 = nullptr;
     BlockNode* body;
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class ASTTree : public ASTNode
@@ -243,6 +264,7 @@ class ASTTree : public ASTNode
   public:
     vector<ASTNode*>* globals = new vector<ASTNode*>;
     virtual string toString() override;
+    virtual string toASTString(int level) override;
 };
 
 class Parser

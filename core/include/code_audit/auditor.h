@@ -109,6 +109,8 @@ public:
     TypeNode *type;
     string name;
     Token token;
+    size_t addr;
+    size_t size;
     vector<VariableTag *> tags;
     VariableTracker(TypeNode *type, Token token);
 };
