@@ -5,9 +5,6 @@
 
 using namespace std;
 
-namespace CodeAudit
-{
-
 struct Token
 {
     string name;
@@ -25,4 +22,3 @@ public:
 
 private:
 };
-}

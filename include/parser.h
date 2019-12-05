@@ -3,11 +3,9 @@
 #include <string>
 
 using namespace std;
-namespace CodeAudit
-{
-namespace SyntaxParser
-{
 
+namespace Parser
+{
 class ASTNode
 {
   public:
@@ -281,6 +279,4 @@ void set_ast_callback(void (*callback)(ASTTree*));
 void reset_parser();
 
 int yyparse();
-
-} // namespace SyntaxParser
-} // namespace CodeAudit
+}

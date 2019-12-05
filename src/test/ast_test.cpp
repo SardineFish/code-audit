@@ -1,10 +1,8 @@
-#include "code_audit/parser.h"
+#include "parser.h"
 #include <fstream>
 #include <iostream>
 
 using namespace std;
-using namespace CodeAudit;
-using namespace CodeAudit::SyntaxParser;
 
 int main(int argc, char **argv)
 {
@@ -24,7 +22,7 @@ int main(int argc, char **argv)
 
     vector<Token> tokens;
     Lexer lexer;
-    Parser parser;
+    Parser::Parser parser;
 
     lexer.lex(source, tokens);
     auto ast = parser.parse(tokens);

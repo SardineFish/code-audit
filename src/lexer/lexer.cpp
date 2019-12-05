@@ -1,11 +1,9 @@
-#include "code_audit/lexer.h"
-#include "code_audit/c_lexer.h"
+#include "lexer.h"
+#include "c_lexer.h"
 #include <string>
 
 using namespace std;
 
-namespace CodeAudit
-{
 
 void tokenCallback(token_t token, void* state)
 {
@@ -34,5 +32,4 @@ Lexer::TokenList Lexer::lex(string source)
     Lexer::TokenList list;
     this->lex(source, list);
     return list;
-}
 }

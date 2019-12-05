@@ -1,5 +1,5 @@
 %{
-    #include "code_audit/parser.h"
+    #include "parser.h"
 
     #include <map>
     #include <iostream>
@@ -11,10 +11,9 @@
         Token NAME = __temp->token;         \
         delete __temp;                   
 
-namespace CodeAudit
+namespace Parser
 {
-namespace SyntaxParser
-{
+
     Token latestToken;
     void yyerror (char *s)
     {
@@ -643,6 +642,5 @@ int yylex()
         subIdx = -1;
     }
     return chr;
-}
 }
 }

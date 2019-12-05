@@ -22,7 +22,8 @@
                 "${workspaceFolder}/package/node_modules/node-addon-api",
                 "${workspaceFolder}/headers/node-v11.15.0/include/node",
                 "${workspaceFolder}/core/include",
-                "${workspaceFolder}/distributed/include"
+                "${workspaceFolder}/distributed/include",
+                "${workspaceFolder}/include"
             ]
         }
     ],

@@ -1,8 +1,6 @@
-#include "code_audit/parser.h"
+#include "parser.h"
 
-namespace CodeAudit
-{
-namespace SyntaxParser
+namespace Parser
 {
 
 Parser::Parser()
@@ -26,6 +24,4 @@ ASTTree* Parser::parse(vector<Token>& tokens)
     AST = nullptr;
     return ast;
 }
-
-} // namespace SyntaxParser
 }

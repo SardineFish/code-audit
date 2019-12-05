@@ -1,10 +1,8 @@
-#include "code_audit/parser.h"
+#include "parser.h"
 
-namespace CodeAudit
-{
-namespace SyntaxParser
-{
 
+namespace Parser
+{
 string indent(string input, int level)
 {
     string output = "";
@@ -455,5 +453,4 @@ string VariableDefStatement::toASTString(int level)
     return str;
 }
 
-}
 }

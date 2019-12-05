@@ -1,5 +1,5 @@
 %{
-#include "code_audit/c_lexer.h"
+#include "c_lexer.h"
 #include <stdio.h>
 
 void token(const char* name, const char* attribute);

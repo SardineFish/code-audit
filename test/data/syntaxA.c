@@ -10,6 +10,7 @@ int gcd(int x, int y)
 
 int main()
 {
+    x = 1 + 2 + 3 + 4 + 5 + 6;
     int t[0] = {{1, 2, 3}, 2, 3};
     int x = 0, y = 0;
     scanf("%d,%d", &x, &y);

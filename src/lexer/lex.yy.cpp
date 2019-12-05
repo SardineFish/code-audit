@@ -1,6 +1,6 @@
-#line 2 "lex.yy.cpp"
+#line 2 "src/lexer/lex.yy.cpp"
 
-#line 4 "lex.yy.cpp"
+#line 4 "src/lexer/lex.yy.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -571,16 +571,16 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "c.l"
-#line 2 "c.l"
-#include "code_audit/c_lexer.h"
+#line 1 "src/lexer/c.l"
+#line 2 "src/lexer/c.l"
+#include "c_lexer.h"
 #include <stdio.h>
 
 void token(const char* name, const char* attribute);
 
 // Avoid undecleare error from gcc in Windows.
-#line 583 "lex.yy.cpp"
-#line 584 "lex.yy.cpp"
+#line 583 "src/lexer/lex.yy.cpp"
+#line 584 "src/lexer/lex.yy.cpp"
 
 #define INITIAL 0
 
@@ -797,10 +797,10 @@ YY_DECL
 		}
 
 	{
-#line 18 "c.l"
+#line 18 "src/lexer/c.l"
 
 
-#line 804 "lex.yy.cpp"
+#line 804 "src/lexer/lex.yy.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -860,83 +860,83 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 20 "c.l"
+#line 20 "src/lexer/c.l"
 skip();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 21 "c.l"
+#line 21 "src/lexer/c.l"
 skip();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 22 "c.l"
+#line 22 "src/lexer/c.l"
 token("const-char", yytext);
 	YY_BREAK
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 23 "c.l"
+#line 23 "src/lexer/c.l"
 token("const-string", yytext);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 24 "c.l"
+#line 24 "src/lexer/c.l"
 token("else if", yytext);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 25 "c.l"
+#line 25 "src/lexer/c.l"
 token("long long", yytext);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 26 "c.l"
+#line 26 "src/lexer/c.l"
 token(yytext, yytext);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 27 "c.l"
+#line 27 "src/lexer/c.l"
 token("null", yytext);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 28 "c.l"
+#line 28 "src/lexer/c.l"
 token("id", yytext);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 29 "c.l"
+#line 29 "src/lexer/c.l"
 token("number", yytext);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 30 "c.l"
+#line 30 "src/lexer/c.l"
 token(yytext, yytext);
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 31 "c.l"
+#line 31 "src/lexer/c.l"
 token(yytext, yytext);
 	YY_BREAK
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 32 "c.l"
+#line 32 "src/lexer/c.l"
 token("preprocessor", yytext);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 33 "c.l"
+#line 33 "src/lexer/c.l"
 token("unknown", yytext);
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 36 "c.l"
+#line 36 "src/lexer/c.l"
 ECHO;
 	YY_BREAK
-#line 940 "lex.yy.cpp"
+#line 940 "src/lexer/lex.yy.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1941,7 +1941,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 36 "c.l"
+#line 36 "src/lexer/c.l"
 
 
 int yywrap(){ return 1; }
