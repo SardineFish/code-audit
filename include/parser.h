@@ -159,6 +159,30 @@ class Constant : public Expression
     virtual string toASTString(int level) override;
 };
 
+class NumberConstant : public Constant
+{
+  public:
+    uint64_t value;
+    NumberConstant(Token t) : Constant(t)
+    {
+        value = stoll(t.attribute);
+    }
+};
+class CharConstant : public Constant
+{
+  public:
+    uint8_t value;
+    CharConstant(Token t) : Constant(t) {
+        value = t.attribute[1];
+    }
+};
+class StringConstant : public Constant
+{
+  public:
+    StringConstant(Token t) : Constant(t) {}
+};
+
+
 class VariableDefine : public Expression
 {
   public:

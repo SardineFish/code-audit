@@ -2031,7 +2031,7 @@ yyreduce:
 #line 299 "src/parser/c.y" /* yacc.c:1646  */
     {
         EXTRACT_TOKEN(num, (yyvsp[0]))
-        (yyval) = new Constant(num);
+        (yyval) = new NumberConstant(num);
     }
 #line 2037 "src/parser/parser.yy.cpp" /* yacc.c:1646  */
     break;
@@ -2040,7 +2040,7 @@ yyreduce:
 #line 303 "src/parser/c.y" /* yacc.c:1646  */
     {
         EXTRACT_TOKEN(str, (yyvsp[0]))
-        (yyval) = new Constant(str);
+        (yyval) = new StringConstant(str);
     }
 #line 2046 "src/parser/parser.yy.cpp" /* yacc.c:1646  */
     break;
@@ -2049,7 +2049,7 @@ yyreduce:
 #line 307 "src/parser/c.y" /* yacc.c:1646  */
     {
         EXTRACT_TOKEN(chr, (yyvsp[0]))
-        (yyval) = new Constant(chr);
+        (yyval) = new CharConstant(chr);
     }
 #line 2055 "src/parser/parser.yy.cpp" /* yacc.c:1646  */
     break;

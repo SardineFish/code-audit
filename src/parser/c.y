@@ -298,15 +298,15 @@ expr: ID {
 
 constant: NUMBER {
         EXTRACT_TOKEN(num, $1)
-        $$ = new Constant(num);
+        $$ = new NumberConstant(num);
     }
     | STRING {
         EXTRACT_TOKEN(str, $1)
-        $$ = new Constant(str);
+        $$ = new StringConstant(str);
     } 
     | CHAR {
         EXTRACT_TOKEN(chr, $1)
-        $$ = new Constant(chr);
+        $$ = new CharConstant(chr);
     }
     | NULL_PTR {
         EXTRACT_TOKEN(nullPtr, $1)
