@@ -14,7 +14,8 @@ config:
 	$(if $(filter $(OS), Windows_NT), cmake . -B$(BUILD_DIR) -G "MinGW Makefiles", cmake . -B$(BUILD_DIR))
 
 all: build/Makefile
-	cd build && make
+	cd build && make && \
+	echo "\nBuild Complete!\n"
 
 build/Makefile: src/lexer/lex.yy.cpp src/parser/parser.yy.cpp
 	make config

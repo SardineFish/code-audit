@@ -1,0 +1,101 @@
+AST-root
+  #include <stdio.h>
+  func-define
+    type:
+      signed: true
+      name: int
+      pointer: 0
+    name: gcd
+    params:
+      variable
+        name: x
+      variable
+        name: y
+    body:
+      block
+        
+        if
+          condition: 
+            infix: ==
+              infix: %
+                variable: x
+                variable: y
+              constant: 0
+          body: 
+            block
+              return
+                variable: y
+        return
+          func-invoke
+            name: gcd
+            params: 
+              variable: y
+              infix: %
+                variable: x
+                variable: y
+  func-define
+    type:
+      signed: true
+      name: int
+      pointer: 0
+    name: main
+    params:
+    body:
+      block
+        statement
+          infix: =
+            variable: x
+            infix: +
+              infix: +
+                infix: +
+                  infix: +
+                    infix: +
+                      constant: 1
+                      constant: 2
+                    constant: 3
+                  constant: 4
+                constant: 5
+              constant: 6
+        variable-define
+          variable
+            name: t
+            array-define
+              array-size: 
+                constant: 0
+            initial-value
+              elements: 
+                constant: 1
+                constant: 2
+                constant: 3
+                constant: 2
+                constant: 3
+        variable-define
+          variable
+            name: x
+            initial-value
+              constant: 0
+          variable
+            name: y
+            initial-value
+              constant: 0
+        statement
+          func-invoke
+            name: scanf
+            params: 
+              constant: "%d,%d"
+              prefix: &
+                variable: x
+              prefix: &
+                variable: y
+        statement
+          func-invoke
+            name: printf
+            params: 
+              constant: "%d\n"
+              func-invoke
+                name: gcd
+                params: 
+                  variable: x
+                  variable: y
+        return
+          constant: 0

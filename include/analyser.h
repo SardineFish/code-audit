@@ -21,9 +21,11 @@ public:
         FLOAT = 5,
         DOUBLE = 6,
         POINTER = 7,
+        ARRAY = 8,
     };
     Type *base;
     BuiltInType type;
+    size_t arraySize = 1;
     size_t size();
     Type *arithmeticType(Type* rhs);
     Type *logicalType(Type *rhs);
@@ -33,6 +35,7 @@ public:
     Type *dereferenceType();
     Type(BuiltInType type);
     Type(Type *pointerBase);
+    Type(Type *elementType, size_t length);
 };
 
 struct Symbol
@@ -86,6 +89,7 @@ struct OpTarget
     OpTargetType type;
     uint64_t value;
     Type *valueType;
+    uint32_t addition;
 };
 
 struct OP

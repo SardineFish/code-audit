@@ -28,7 +28,9 @@
     if ((TARGET).type == OpTarget::Register) \
         block->registerPool.release((TARGET).value);
 
-Type* getType(TypeNode* typeNode, int dim)
+bool evaluate(Expression *expr, uint64_t &value);
+
+Type *getType(TypeNode *typeNode, vector<Expression *> *dims)
 {
     Type *type;
     if (typeNode->type.attribute == "byte")
@@ -47,11 +49,28 @@ Type* getType(TypeNode* typeNode, int dim)
         type = new Type(Type::FLOAT);
     else if (typeNode->type.attribute == "double")
         type = new Type(Type::DOUBLE);
-    for (int i = 0; i < dim;i++)
+    
+    if(dims)
     {
-        type = new Type(type);
+        foreach(dim, dims)
+        {
+            uint64_t d = 0;
+            if(!evaluate(dim, d))
+            {
+                perror("Dimension of array must be a constant.\n");
+            }
+            type = new Type(type, d);
+        }
     }
     return type;
+}
+void auditInternal(ASTNode *node, Program *program, CodeBlock *block);
+
+Program* analyse(ASTTree* ast)
+{
+    auto program = new Program();
+    auditInternal(ast, program, nullptr);
+    return program;
 }
 
 void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
@@ -61,7 +80,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
 
     if (auto ast = dynamic_cast<ASTTree *>(node))
     {
-        program = new Program();
         block = program->newBlock(program->getLabel("_Code"), nullptr, new SymbolTable(nullptr));
 
         foreach (def, ast->globals)
@@ -78,33 +96,57 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             Symbol::VARIABLE,
             var->id->token.attribute,
             0,
-            getType(var->type, var->arrayDimensions->size())
+            getType(var->type, var->arrayDimensions)
         };
         if(!block->symbolTable->addSymbol(&symbol))
         {
             fprintf(stderr, "Redefind variable '%s'.\n", symbol.name.c_str());
         }
+        if(var->initValue)
+        {
+            OpTarget varAddr = {
+                OpTarget::Register,
+                block->registerPool.get(),
+                symbol.valueType};
+            OP op = {
+                OP::LoadAddr,
+                varAddr,
+                {OpTarget::Memory, symbol.addr, symbol.valueType, symbol.level}};
+            block->codeSequence.push_back(op);
 
-        ANALYSE(var->initValue);
-        POP(block->targetStack, val);
-        OpTarget temp = {
-            OpTarget::Register,
-            block->registerPool.get(),
-            symbol.valueType
-        };
-        OP op = {
-            OP::LoadAddr,
-            temp,
-            {OpTarget::Memory, symbol.addr | (symbol.level << 32), symbol.valueType}
-        };
-        block->codeSequence.push_back(op);
-        op = {
-            OP::Store,
-            temp,
-            val
-        };
-        RELEASE_REG(val);
-        RELEASE_REG(temp);
+            if(StructInit* initValue = dynamic_cast<StructInit*>(var->initValue))
+            {
+                size_t size = symbol.valueType->base->size();
+                size_t offset = 0;
+                foreach (element, initValue->elements)
+                {
+                    ANALYSE(element);
+                    POP(block->targetStack, val);
+                    // offset(varAddr) = $val
+                    block->codeSequence.push_back({
+                        OP::Store,
+                        varAddr,
+                        val,
+                        {OpTarget::Constant, offset}
+                    });
+                    RELEASE_REG(val);
+                    offset += size;
+                }
+            }
+            else
+            {
+                ANALYSE(var->initValue);
+                POP(block->targetStack, val);
+
+                op = {
+                    OP::Store,
+                    varAddr,
+                    val,
+                    {OpTarget::Constant, 0}};
+                RELEASE_REG(val);
+            }
+            RELEASE_REG(varAddr);
+        }
     }
     ANALYSE_FOR(FunctionDefine, func)
     {
@@ -211,7 +253,8 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             op = {
                 OP::Store,
                 lhs,
-                rhs
+                rhs,
+                {OpTarget::Constant, 0}
             };
             auto t = result;
             result = rhs;
@@ -274,11 +317,13 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         if(symbol.type == Symbol::NONE)
         {
             fprintf(stderr, "Undefinded symbol '%s'.\n", val->name.c_str());
+            symbol.valueType = new Type(Type::INT32);
         }
         OpTarget target = {
             OpTarget::Memory,
-            symbol.addr | (symbol.level << 32),
+            symbol.addr,
             symbol.valueType,
+            symbol.level 
         };
         OpTarget reg = {
             OpTarget::Register,
@@ -450,6 +495,10 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     ANALYSE_FOR(FunctionInvokeNode, call)
     {
         auto symbol = block->symbolTable->find(call->name);
+        if(symbol.type == Symbol::NONE)
+        {
+            fprintf(stderr, "Call to undefinded function '%s'.\n", call->name);
+        }
         OpTarget func = {
             OpTarget::Label,
             symbol.addr,
@@ -505,10 +554,9 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 param,
                 {OpTarget::Null}};
             block->codeSequence.push_back(op);
-            if (param.type == OpTarget::Register)
-                block->registerPool.release(param.value);
+            RELEASE_REG(param);
         }
-        
+
         op = {
             OP::Call,
             {OpTarget::Null},
@@ -706,4 +754,21 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             });
         }
     }
+}
+
+bool evaluate(Expression *expr, uint64_t& value)
+{
+    try
+    {
+        if (auto constant = dynamic_cast<Constant *>(expr))
+        {
+            value = stoull(constant->value);
+            return true;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        
+    }
+    return false;
 }

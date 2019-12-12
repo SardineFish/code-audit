@@ -10,8 +10,9 @@ file(MAKE_DIRECTORY ${EXECUTABLE_OUTPUT_PATH})
 
 file(GLOB SOURCES
     "${PROJECT_SOURCE_DIR}/include/**/*.h"
-    "${PROJECT_SOURCE_DIR}/src/**/*.cpp"
-    "${PROJECT_SOURCE_DIR}/src/*.cpp"
+    "${PROJECT_SOURCE_DIR}/src/analyser/*.cpp"
+    "${PROJECT_SOURCE_DIR}/src/lexer/*.cpp"
+    "${PROJECT_SOURCE_DIR}/src/parser/*.cpp"
 
 )
 add_compile_options(-std=c++11)
@@ -22,5 +23,7 @@ include_directories("${PROJECT_SOURCE_DIR}/include")
 add_library(compiler_core SHARED ${SOURCES})
 
 add_executable(ast_test "${PROJECT_SOURCE_DIR}/src/test/ast_test.cpp")
+add_executable(analyser_test "${PROJECT_SOURCE_DIR}/src/test/analyser_test.cpp")
 
 target_link_libraries(ast_test compiler_core)
+target_link_libraries(analyser_test compiler_core)

@@ -98,7 +98,7 @@ preprocessor: PREPROC { $$ = $1; }
 func_def: type id '(' args_declare ')' block { 
     auto f = new FunctionDefine;
     ListNode<VariableDefine>* args = (ListNode<VariableDefine>*)$4;
-    f->name = ((TokenNode*)$2)->token.name;
+    f->name = ((TokenNode*)$2)->token.attribute;
     f->type = (TypeNode*)$1;
     f->id = (TokenNode*)$2;
     f->args = args->list;

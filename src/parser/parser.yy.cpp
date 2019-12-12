@@ -1584,7 +1584,7 @@ yyreduce:
     { 
     auto f = new FunctionDefine;
     ListNode<VariableDefine>* args = (ListNode<VariableDefine>*)(yyvsp[-2]);
-    f->name = ((TokenNode*)(yyvsp[-4]))->token.name;
+    f->name = ((TokenNode*)(yyvsp[-4]))->token.attribute;
     f->type = (TypeNode*)(yyvsp[-5]);
     f->id = (TokenNode*)(yyvsp[-4]);
     f->args = args->list;

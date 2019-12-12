@@ -21,7 +21,7 @@ Symbol SymbolTable::find(string name)
     }
     auto symbol = symbolMap[name];
     symbol.level = level;
-    return symbolMap[name];
+    return symbol;
 }
 bool SymbolTable::addSymbol(Symbol* symbol)
 {
@@ -30,6 +30,7 @@ bool SymbolTable::addSymbol(Symbol* symbol)
     symbol->addr = size;
     symbolMap[symbol->name] = *symbol;
     size += symbol->valueType->size();
+    return true;
 }
 RegisterPool::RegisterPool()
 {}
@@ -74,11 +75,19 @@ Type::Type(Type* pointer)
     this->type = Type::POINTER;
     this->base = pointer;
 }
+Type::Type(Type* elementType, size_t length)
+{
+    this->type = Type::ARRAY;
+    this->base = elementType;
+    this->arraySize = length;
+}
 Type* Type::arithmeticType(Type* rhs)
 {
     if(this->type == Type::POINTER)
     {
         if((int)rhs->type <=4)
+            return this;
+        else if(rhs->type == Type::ARRAY)
             return this;
         else
             return nullptr;
@@ -87,6 +96,8 @@ Type* Type::arithmeticType(Type* rhs)
     {
         if ((int)this->type <= 4)
             return this;
+        else if (this->type == Type::ARRAY)
+            return rhs;
         else
             return nullptr;
     }
@@ -118,7 +129,7 @@ Type* Type::bitType(Type* rhs)
 }
 Type * Type::dereferenceType()
 {
-    if(this->type != Type::POINTER)
+    if(this->type != Type::POINTER || this->type != Type::ARRAY)
         return nullptr;
     return this->base;
 }
@@ -146,6 +157,9 @@ size_t Type::size()
         break;
     case Type::POINTER:
         return 4;
+        break;
+    case Type::ARRAY:
+        return base->size() * arraySize;
         break;
     }
 }

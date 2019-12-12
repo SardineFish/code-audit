@@ -27,6 +27,7 @@ int main(int argc, char **argv)
     lexer.lex(source, tokens);
     auto ast = parser.parse(tokens);
     cout << ast->toASTString(0);
+    
 
     return 0;
 }
