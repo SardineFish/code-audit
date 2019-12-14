@@ -1,6 +1,8 @@
 # Builds
 build
 
+bin
+
 # Logs
 logs
 *.log
