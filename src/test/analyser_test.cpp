@@ -28,6 +28,6 @@ int main(int argc, char **argv)
     lexer.lex(source, tokens);
     auto ast = parser.parse(tokens);
     auto program = analyse(ast);
-
+    assemblyText(program, stdout);
     return 0;
 }

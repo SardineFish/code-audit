@@ -14,6 +14,7 @@ class Type
 public:
     enum BuiltInType
     {
+        VOID = 0,
         INT8 = 1,
         INT16 = 2,
         INT32 = 3,
@@ -67,9 +68,11 @@ public:
     SymbolTable(SymbolTable *upper, bool isFunc = false);
     Symbol find(string name);
     size_t totalSize();
+    size_t offset();
+    void updateTotalSize();
+
 private:
     size_t _totalSize;
-    void updateTotalSize(size_t childSize);
 };
 
 struct OpTarget
@@ -131,6 +134,7 @@ struct OP
         Call,
         Return,
         LoadAddr,
+        SysCall,
     };
     OpType op;
     OpTarget result, arg1, arg2;
@@ -160,15 +164,26 @@ public:
     CodeBlock(int id, RegisterPool *registerPool);
 };
 
+struct FunctionSymbol 
+{
+    string name;
+    vector<Type *> args;
+    Type *returnType;
+    Symbol symbol;
+    CodeBlock *block;
+};
+
 class Program
 {
 public:
     CodeBlock *entry = nullptr;
     map<int, CodeBlock *> blocks;
     map<int, string> labels;
+    map<string, FunctionSymbol> functions;
+    CodeBlock *global;
     int getLabel(string name);
     int getLabel();
-    CodeBlock *newBlock(int id, RegisterPool *registerPool, SymbolTable* SymbolTable);
+    CodeBlock *newBlock(int id, RegisterPool *registerPool, SymbolTable *SymbolTable);
     CodeBlock *newBlock(RegisterPool *registerPool, SymbolTable *SymbolTable);
 
 private:
@@ -176,3 +191,5 @@ private:
 };
 
 Program *analyse(ASTTree *ast);
+
+void assemblyText(Program *program, FILE *fp);

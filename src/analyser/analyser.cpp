@@ -29,10 +29,13 @@
         block->registerPool.release((TARGET).value);
 
 bool evaluate(Expression *expr, uint64_t &value);
+void auditInternal(ASTNode *node, Program *program, CodeBlock *block);
 
 Type *getType(TypeNode *typeNode, vector<Expression *> *dims)
 {
     Type *type;
+    if (typeNode->type.attribute == "void")
+        type = new Type(Type::VOID);
     if (typeNode->type.attribute == "byte")
         type = new Type(Type::INT8);
     else if (typeNode->type.attribute == "char")
@@ -64,12 +67,27 @@ Type *getType(TypeNode *typeNode, vector<Expression *> *dims)
     }
     return type;
 }
-void auditInternal(ASTNode *node, Program *program, CodeBlock *block);
 
 Program* analyse(ASTTree* ast)
 {
     auto program = new Program();
     auditInternal(ast, program, nullptr);
+
+    for(auto & block : program->blocks)
+    {
+        block.second->symbolTable->updateTotalSize();
+    }
+
+    auto symbol = program->global->symbolTable->find("main");
+    if(symbol.type == Symbol::NONE)
+    {
+        perror("Entry 'main' not found.\n");
+    }
+    else
+    {
+        program->entry = program->blocks[symbol.addr];
+    }
+
     return program;
 }
 
@@ -81,6 +99,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     if (auto ast = dynamic_cast<ASTTree *>(node))
     {
         block = program->newBlock(program->getLabel("_Code"), nullptr, new SymbolTable(nullptr));
+        program->global = block;
 
         foreach (def, ast->globals)
             ANALYSE(def);
@@ -150,7 +169,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(FunctionDefine, func)
     {
-        auto funcBlock = program->newBlock(nullptr, new SymbolTable(block->symbolTable, true));
         
         auto labelID = program->getLabel(func->name);
         Symbol symbol = {
@@ -160,6 +178,17 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             new Type(nullptr)
         };
         block->symbolTable->addSymbol(&symbol);
+
+        auto funcBlock = program->newBlock(labelID, nullptr, new SymbolTable(block->symbolTable, true));
+
+        FunctionSymbol funcSymbol;
+        funcSymbol.name = func->name;
+        foreach (arg, func->args)
+            funcSymbol.args.push_back(getType(arg->type, nullptr));
+        funcSymbol.returnType = getType(func->type, nullptr);
+        funcSymbol.symbol = symbol;
+        funcSymbol.block = funcBlock;
+        program->functions[func->name] = funcSymbol;
 
         // insert label
         OP op = {
@@ -202,20 +231,19 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
          * 
          **/
 
-        // // Avoid dual mem access
-        // // Add op MOV R, [addr]
-        // if(lhs.type == OpTarget::Memory && rhs.type == OpTarget::Memory)
-        // {
-        //     auto lhsReg = block->registerPool.get();
-        //     OpTarget lhsTarget = { OpTarget::Register, lhsReg };
-        //     block->codeSequence.push_back({
-        //         OP::Mov,
-        //         lhsTarget,
-        //         lhs,
-        //         {OpTarget::Null, 0}
-        //     });
-        //     lhs = lhsTarget;
-        // }
+        // Avoid dual mem access
+        // Add op MOV R, [addr]
+        if(lhs.type == OpTarget::Constant)
+        {
+            auto lhsReg = block->registerPool.get();
+            OpTarget lhsTarget = { OpTarget::Register, lhsReg, lhs.valueType };
+            block->codeSequence.push_back({
+                OP::Load,
+                lhsTarget,
+                lhs,
+            });
+            lhs = lhsTarget;
+        }
 
         OpTarget result = {OpTarget::Register, block->registerPool.get(), lhs.valueType->arithmeticType(rhs.valueType)};
         if(result.valueType == nullptr)
@@ -225,29 +253,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         OP op;
 
-        if(expr->op == "=")
-        {
-            if(lhs.type != OpTarget::Memory)
-            {
-                perror("Invalid lhs.\n");
-            }
-            if(rhs.type == OpTarget::Memory)
-            {
-                OpTarget temp = {
-                    OpTarget::Register,
-                    block->registerPool.get(),
-                    rhs.valueType
-                };
-                op = {
-                    OP::Load,
-                    temp,
-                    rhs
-                };
-                block->codeSequence.push_back(op);
-                RELEASE_REG(rhs);
-                rhs = temp;
-            }
-        }
+        
         if(expr->op == "=")
         {
             op = {
@@ -495,10 +501,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     ANALYSE_FOR(FunctionInvokeNode, call)
     {
         auto symbol = block->symbolTable->find(call->name);
-        if(symbol.type == Symbol::NONE)
-        {
-            fprintf(stderr, "Call to undefinded function '%s'.\n", call->name);
-        }
         OpTarget func = {
             OpTarget::Label,
             symbol.addr,
@@ -512,15 +514,15 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 new Type(nullptr)
             };
         }
-        else if(symbol.type == Symbol::NONE)
+        else if (symbol.type == Symbol::NONE)
         {
-            fprintf(stderr, "Undefinded symbol '%s'", call->name.c_str());
+            fprintf(stderr, "Call to undefinded function '%s'.\n", call->name.c_str());
         }
         else
         {
-            fprintf(stderr, "Invalid call of non-function type '%s'", call->name.c_str());
+            fprintf(stderr, "Invalid call of non-function type '%s'.\n", call->name.c_str());
         }
-
+        auto regType = new Type(Type::INT32);
         OP op;
         // Save registers
         for (auto i = 0; i < REGISTER_COUNT; i++)
@@ -528,7 +530,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             op = {
                 OP::Push,
                 {OpTarget::Null},
-                {OpTarget::Register, i, nullptr},
+                {OpTarget::Register, i, regType},
                 {OpTarget::Null}
             };
             block->codeSequence.push_back(op);
@@ -575,12 +577,12 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         {
             op = {
                 OP::Pop,
-                {OpTarget::Register, i, nullptr}
+                {OpTarget::Register, i, regType}
             };
             block->codeSequence.push_back(op);
         }
 
-        block->targetStack.push({OpTarget::V0});
+        block->targetStack.push({OpTarget::V0, 0, program->functions[call->name].returnType});
     }
     ANALYSE_FOR(If, if_struct)
     {

@@ -25,13 +25,32 @@ Symbol SymbolTable::find(string name)
 }
 bool SymbolTable::addSymbol(Symbol* symbol)
 {
-    if(symbolMap.find(symbol->name) != symbolMap.end())
+    if (symbolMap.find(symbol->name) != symbolMap.end())
         return false;
-    symbol->addr = size;
+
+    if (symbol->type == Symbol::VARIABLE)
+        symbol->addr = size;
     symbolMap[symbol->name] = *symbol;
     size += symbol->valueType->size();
-    return true;
+
+    return true; 
 }
+void SymbolTable::updateTotalSize()
+{
+    _totalSize = max(_totalSize, size);
+    if (this->upper)
+    {
+        this->upper->_totalSize = max(this->upper->_totalSize, this->upper->size + this->_totalSize);
+        this->upper->updateTotalSize();
+    }
+}
+size_t SymbolTable::offset()
+{
+    if(!upper)
+        return 0;
+    return upper->size + upper->offset();
+}
+
 RegisterPool::RegisterPool()
 {}
 RegisterPool::RegisterPool(int capacity)
