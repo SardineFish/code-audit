@@ -4,10 +4,10 @@
     else if (TYPE *NAME = dynamic_cast<TYPE *>(node))
 
 #define ANALYSE(X) \
-    auditInternal(X, program, block)
+    analyseInternal(X, program, block)
 
 #define ANALYSE_X(X, BLOCK) \
-    auditInternal(X, program, BLOCK)
+    analyseInternal(X, program, BLOCK)
 
 #define BUILD_INFIX(OP_STR, OP_TYPE) \
     else if (expr->op == OP_STR)     \
@@ -74,7 +74,7 @@ Program* analyse(ASTTree* ast)
 
     analyseSymbol(program, ast);
 
-    auditInternal(ast, program, nullptr);
+    analyseInternal(ast, program, nullptr);
 
     auto symbol = program->global->symbolTable->find("main");
     if(symbol.type == Symbol::NONE)
@@ -89,7 +89,12 @@ Program* analyse(ASTTree* ast)
     return program;
 }
 
-void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
+/**
+ * 对每个AST节点递归调用该函数
+ * 基于C++11的动态类型检查
+ * 判断ASTNode属于哪个类的对象指针
+ **/
+void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
 {
     if (node == nullptr)
         return;
@@ -113,6 +118,10 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         block->targetStack.push(lastVar);
     }
+    /**
+     * 变量定义，这里实现变量初始化赋值的操作，
+     * 符号表项已经在符号表分析的时候添加了
+     **/
     ANALYSE_FOR(VariableDefine, var)
     {
         Symbol symbol = block->symbolTable->find(var->id->token.attribute);
@@ -128,6 +137,11 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 {OpTarget::Memory, block->symbolTable->getAddr(symbol.level, symbol.addr), symbol.valueType, symbol.level}};
             block->codeSequence.push_back(op);
 
+            /**
+             * 处理 int a[] = {1, 2, 3, 4} 这样的数组初始化赋值
+             * 依次分析并翻译列表中每一个表达式节点，
+             * 将每次计算得到的值存到数组内存的相应偏移位置中
+             **/
             if(StructInit* initValue = dynamic_cast<StructInit*>(var->initValue))
             {
                 size_t size = symbol.valueType->base->size();
@@ -162,6 +176,10 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             }
             else
             {
+                /**
+                 * 一般的赋值 int a = b 这样
+                 * 翻译b表达式，并将结果存入a的内存地址中
+                 **/
                 ANALYSE(var->initValue);
                 POP(block->targetStack, val);
                 if(val.type == OpTarget::Memory || val.type == OpTarget::Constant || val.type == OpTarget::AddressRegister)
@@ -205,13 +223,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         funcSymbol.block = funcBlock;
         program->functions[func->name] = funcSymbol;
 
-        // insert label
-        /*OP op = {
-            OP::Label,
-            {OpTarget::Label, labelID}
-        };
-        funcBlock->codeSequence.push_back(op);*/
-
         foreach (var, func->args)
             ANALYSE_X(var, funcBlock);
         ANALYSE_X(func->body, funcBlock);
@@ -229,6 +240,14 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(InfixExpr, expr)
     {
+        /**
+         * 翻译二元运算符 + - * / 等
+         * 递归翻译左右操作数
+         * 并获取左右操作数（从结果栈中pop出来）
+         * 获取一个临时寄存器 $t
+         * 生成运算指令 OP $t, lhs, rhs
+         * $t push 进入结果栈，以便上层表达式取用
+         **/
         ANALYSE(expr->left);
         ANALYSE(expr->right);
         auto rhs = block->targetStack.top();
@@ -237,7 +256,10 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         block->targetStack.pop();
 
 
-        // Add op MOV R, [addr]
+        /**
+         * 左右操作数不能同时为常量（MIPS指令集不支持两个常量作为源操作数）
+         * 将左操作数移入一个临时寄存器
+         **/
         if(lhs.type == OpTarget::Constant)
         {
             auto lhsReg = block->registerPool.get();
@@ -259,7 +281,10 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         OP op;
 
-        // Load rhs
+        /**
+         * 处理右操作数，若右操作数是一个内存变量，或者是一个保存了内存地址的寄存器（数组的元素地址）
+         * 读取该内存的数据到一个临时寄存器中
+         **/
         if(rhs.type == OpTarget::Memory)
         {
             OpTarget rhsReg = {
@@ -286,7 +311,14 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             rhs.type = OpTarget::Register;
         }
 
-        // handel lhs
+        /**
+         * 处理左操作数
+         * 对于赋值运算，如果左操作数是一个内存变量，将内存变量的地址（当前局部变量基址 + 局部变量的偏移地址）储存到一个临时寄存器，
+         * 以便后续使用寄存器间接寻址，将右操作属存入该内存地址中；
+         * 
+         * 对于非赋值运算，如果左操作属是一个内存变量，或者是一个保存了内存地址的寄存器（数组的元素地址）
+         * 读取该内存中的数值到一个临时寄存器中
+         **/
         if(expr->op == "=")
         {
             if(lhs.type == OpTarget::Memory)
@@ -372,11 +404,12 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
 
         block->codeSequence.push_back(op);
         block->targetStack.push(result);
+
+        /**
+         * 左右操作数已经使用完毕，将其临时寄存器释放回寄存器池中
+         **/
         RELEASE_REG(lhs);
         RELEASE_REG(rhs);
-        // $3 = $1 + $2
-        // $4 = $1 + $3
-        // $1 = $3 + $4
     }
     ANALYSE_FOR(NumberConstant, constant)
     {
@@ -398,6 +431,10 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(Variable, val)
     {
+        /**
+         * 对于表达式中的变量，
+         * 构造一个表示内存变量的 OpTarget，并push到结果栈中
+         **/
         auto symbol = block->symbolTable->find(val->name);
         if(symbol.type == Symbol::NONE)
         {
@@ -414,6 +451,13 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(PrefixExpr, expr)
     {
+        /**
+         * 前缀表达式 ++a --a -1 这样的，实现方式类似双目运算符，
+         * 递归翻译其操作数，并从结果栈中取出该操作数，
+         * 如果操作舒是内存变量，将其读出到一个临时寄存器中
+         * 对于++a --a，还要将计算结果写回原操作数的内存中
+         * 并将计算结果push入结果栈
+         **/
         ANALYSE(expr->expr);
         auto arg = block->targetStack.top();
         block->targetStack.pop();
@@ -493,6 +537,13 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(SubfixExpr, expr)
     {
+        /**
+         * 分析后缀单目运算符表达式，a--, i++这类
+         * 同上，
+         * 区别是，这里压入结果栈中的数值是计算前的结果(因此在计算前额外申请一个临时寄存器，将计算前的数值存入寄存器中)
+         * 将计算后的结果存入源操作数的内存中
+         * 并将计算前的结果的临时寄存器压入结果栈
+         **/
         ANALYSE(expr->expr);
 
         auto target = block->targetStack.top();
@@ -567,6 +618,15 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(ArraySubscript, expr)
     {
+        /**
+         * 数组下标访问 array[index] 这样的表达式
+         * 首先翻译数组 array （其实没什么必要额外递归翻译，反正肯定是一个局部变量）
+         * 翻译数组下标表达式 index
+         * 并从结果栈中取出这两个OpTarget
+         * 对于下标表达式 index， 将其乘上数组元素的大小，并加上数组的地址，
+         * $t = &array + sizeof(*array) * index
+         * 存到一个临时寄存器中，并压入结果栈
+         **/
         ANALYSE(expr->target);
         ANALYSE(expr->subscript);
         auto offset = block->targetStack.top();

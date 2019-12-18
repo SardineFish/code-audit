@@ -55,8 +55,12 @@ void analyseSymbol(Program* program, ASTTree* ast)
     analyseSymbolInternal(program, ast, program->gobalSymbols);
 }
 
+// 对每个AST节点递归调用该函数，确保能够遍历所有AST节点
+// 仅分析函数定义、变量定义两种AST节点，并添加到符号表
+// 对于函数定义、if、for等包括BlockNode（代码块）的节点，构造新的符号表（变量的代码块作用域），并设置将该符号表作为上一层符号表的子符号表
 void analyseSymbolInternal(Program* program, ASTNode* node, SymbolTable* table)
 {
+    // 使用C++11的动态类型检查，判断当前节点是哪个类的子类
     if(auto ast = dynamic_cast<ASTTree*>(node))
     {
         foreach(def, ast->globals)
@@ -86,7 +90,7 @@ void analyseSymbolInternal(Program* program, ASTNode* node, SymbolTable* table)
         };
         if (!table->addSymbol(&symbol))
         {
-            fprintf(stderr, "Redefind variable '%s'.\n", symbol.name.c_str());
+            fprintf(stderr, " variable '%s'.\n", symbol.name.c_str());
         }
     }
     ANALYSE_FOR(FunctionDefine, func)
@@ -121,6 +125,14 @@ void analyseSymbolInternal(Program* program, ASTNode* node, SymbolTable* table)
         {
             ANALYSE_X(statement, block->symbolTable);
         }
+        /** 在每个代码块（函数体，if、else、for等代码块）分析结束后，
+         * 更新当前代码块的总size，
+         * 用于计算函数中所有局部变量需要的总空间
+         * 同时可以得到每个符号表中的局部变量相对于函数局部变量内存基址的偏移地址
+         * 因为函数体内存在多个嵌套的符号表
+         *  
+         **/
+
         block->symbolTable->updateTotalSize();
         program->symbolTables.push_back(block->symbolTable);
     }
