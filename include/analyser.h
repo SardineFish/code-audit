@@ -116,7 +116,8 @@ public:
     map<int, CodeBlock *> blocks;
     map<int, string> labels;
     map<string, FunctionSymbol> functions;
-    CodeBlock *global;
+    vector<SymbolTable*> symbolTables;
+    CodeBlock* global;
     SymbolTable* gobalSymbols;
     int getLabel(string name);
     int getLabel();
@@ -132,3 +133,5 @@ Program *analyse(ASTTree *ast);
 void assemblyText(Program *program, FILE *fp);
 
 void analyseSymbol(Program* program, ASTTree* ast);
+
+void printSymbolTables(Program* program);

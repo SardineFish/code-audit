@@ -51,6 +51,7 @@ Type* getType(TypeNode* typeNode, vector<Expression*>* dims)
 void analyseSymbol(Program* program, ASTTree* ast)
 {
     program->gobalSymbols = new SymbolTable(nullptr);
+    program->symbolTables.push_back(program->gobalSymbols);
     analyseSymbolInternal(program, ast, program->gobalSymbols);
 }
 
@@ -121,6 +122,7 @@ void analyseSymbolInternal(Program* program, ASTNode* node, SymbolTable* table)
             ANALYSE_X(statement, block->symbolTable);
         }
         block->symbolTable->updateTotalSize();
+        program->symbolTables.push_back(block->symbolTable);
     }
     ANALYSE_FOR(If, if_struct)
     {
@@ -158,4 +160,40 @@ bool evaluate(Expression* expr, uint64_t& value)
     {
     }
     return false;
+}
+
+void printSymbolTables(Program* program)
+{
+    for(auto &table : program->symbolTables)
+    {
+        if(table->symbolList.size() <= 0)
+            continue;
+        printf("Name\t\tType\tAddr\tValueType\tLevel\t\n");
+        printf("------------------------------------------------------\n");
+        for (auto& symbol : table->symbolList)
+        {
+            string name = symbol.name;
+            string type;
+            switch(symbol.type)
+            {
+            case Symbol::VARIABLE:
+                type = "VAR";
+                break;
+            case Symbol::FUNCTION:
+                type = "FUNC";
+                break;
+            case Symbol::LABEL:
+                type = "LABEL";
+                break;
+            }
+            string valueType;
+            switch(symbol.valueType->type)
+            {
+            case Type::INT32:
+                valueType = "Int32";
+            }
+            printf("%s\t\t%s\t%d\t%s\t\t%d\n", name.c_str(), type.c_str(), symbol.addr, valueType.c_str(), table->level);
+        }
+        printf("\n\n");
+    }
 }

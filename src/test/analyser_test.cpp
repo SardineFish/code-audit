@@ -29,5 +29,6 @@ int main(int argc, char **argv)
     auto ast = parser.parse(tokens);
     auto program = analyse(ast);
     assemblyText(program, stdout);
+    //printSymbolTables(program);
     return 0;
 }
