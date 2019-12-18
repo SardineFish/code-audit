@@ -1,0 +1,215 @@
+.data
+glob: .word 0
+
+
+.text
+__start:
+move $fp, $sp
+main:
+sub $sp, $sp, 60
+move $fp, $sp
+        # PUSH $ra
+sub $sp, $sp, 4
+sw $ra, 0($sp)
+add $t1, $fp, 0
+li $t2, 1
+sw $t2, 0($t1)
+li $t3, 6
+sw $t3, 4($t1)
+li $t4, 7
+sw $t4, 8($t1)
+li $t2, 2
+sw $t2, 12($t1)
+li $t3, 6
+sw $t3, 16($t1)
+li $t4, 9
+sw $t4, 20($t1)
+li $t2, 3
+sw $t2, 24($t1)
+li $t3, 5
+sw $t3, 28($t1)
+li $t4, 4
+sw $t4, 32($t1)
+li $t2, 7
+sw $t2, 36($t1)
+add $t3, $fp, 40
+li $t4, 10
+sw $t4, 0($t3)
+add $t2, $fp, 44
+        # PUSH $t0
+sub $sp, $sp, 4
+sw $t0, 0($sp)
+        # PUSH $t1
+sub $sp, $sp, 4
+sw $t1, 0($sp)
+        # PUSH $t2
+sub $sp, $sp, 4
+sw $t2, 0($sp)
+        # PUSH $t3
+sub $sp, $sp, 4
+sw $t3, 0($sp)
+        # PUSH $fp
+sub $sp, $sp, 4
+sw $fp, 0($sp)
+sub $t1, $sp, 8
+li $t4, 16
+sw $t4, 0($t1)
+li $t3, 6
+sw $t3, 4($t1)
+jal gcd
+        # POP $fp
+lw $fp, 0($sp)
+add $sp, $sp, 4
+        # POP $t3
+lw $t3, 0($sp)
+add $sp, $sp, 4
+        # POP $t2
+lw $t2, 0($sp)
+add $sp, $sp, 4
+        # POP $t1
+lw $t1, 0($sp)
+add $sp, $sp, 4
+        # POP $t0
+lw $t0, 0($sp)
+add $sp, $sp, 4
+sw $v0, 0($t2)
+add $t4, $fp, 48
+li $t3, 0
+sw $t3, 0($t4)
+Loop_7:
+lw $t2, 40($fp)
+lw $t3, 48($fp)
+slt $t1, $t3, $t2
+beqz $t1, Label_9
+add $t4, $fp, 52
+li $t3, 0
+sw $t3, 0($t4)
+Loop_10:
+lw $t1, 48($fp)
+lw $t3, 40($fp)
+sub $t2, $t3, $t1
+sub $t4, $t2, 1
+lw $t1, 52($fp)
+slt $t3, $t1, $t4
+beqz $t3, Label_12
+lw $t1, 52($fp)
+mul $t2, $t1, 4
+add $t4, $fp, 0
+add $t4, $t4, $t2
+lw $t1, 52($fp)
+add $t3, $t1, 1
+mul $t2, $t3, 4
+add $t1, $fp, 0
+add $t1, $t1, $t2
+lw $t1, 0($t1)
+lw $t4, 0($t4)
+slt $t3, $t4, $t1
+beqz $t3, Label_13
+lw $t4, 52($fp)
+mul $t2, $t4, 4
+add $t1, $fp, 0
+add $t1, $t1, $t2
+lw $t1, 0($t1)
+add $t4, $fp, 56
+sw $t1, 0($t4)
+lw $t4, 52($fp)
+mul $t2, $t4, 4
+add $t3, $fp, 0
+add $t3, $t3, $t2
+lw $t4, 52($fp)
+add $t1, $t4, 1
+mul $t2, $t1, 4
+add $t4, $fp, 0
+add $t4, $t4, $t2
+lw $t4, 0($t4)
+sw $t4, 0($t3)
+lw $t3, 52($fp)
+add $t2, $t3, 1
+mul $t1, $t2, 4
+add $t4, $fp, 0
+add $t4, $t4, $t1
+lw $t2, 56($fp)
+sw $t2, 0($t4)
+j Label_14
+Label_13:
+Label_14:
+lw $t4, 52($fp)
+lw $t1, 52($fp)
+addi $t1, $t1, 1
+sw $t1, 52($fp)
+j Loop_10
+Label_12:
+lw $t2, 48($fp)
+lw $t3, 48($fp)
+addi $t3, $t3, 1
+sw $t3, 48($fp)
+j Loop_7
+Label_9:
+li $v0, 10
+syscall
+gcd:
+sub $sp, $sp, 8
+move $fp, $sp
+        # PUSH $ra
+sub $sp, $sp, 4
+sw $ra, 0($sp)
+lw $t2, 4($fp)
+lw $t3, 0($fp)
+div $t1, $t3, $t2
+mfhi $t1
+seq $t4, $t1, 0
+beqz $t4, Label_4
+lw $v0, 4($fp)
+        # POP $ra
+lw $ra, 0($sp)
+add $sp, $sp, 4
+add $sp, $sp, 8
+lw $v0, 4($fp)
+jr $ra    # return
+j Label_5
+Label_4:
+Label_5:
+        # PUSH $t0
+sub $sp, $sp, 4
+sw $t0, 0($sp)
+        # PUSH $t1
+sub $sp, $sp, 4
+sw $t1, 0($sp)
+        # PUSH $t2
+sub $sp, $sp, 4
+sw $t2, 0($sp)
+        # PUSH $t3
+sub $sp, $sp, 4
+sw $t3, 0($sp)
+        # PUSH $fp
+sub $sp, $sp, 4
+sw $fp, 0($sp)
+sub $t3, $sp, 8
+lw $t2, 4($fp)
+sw $t2, 0($t3)
+lw $t4, 4($fp)
+lw $t2, 0($fp)
+div $t1, $t2, $t4
+mfhi $t1
+sw $t1, 4($t3)
+jal gcd
+        # POP $fp
+lw $fp, 0($sp)
+add $sp, $sp, 4
+        # POP $t3
+lw $t3, 0($sp)
+add $sp, $sp, 4
+        # POP $t2
+lw $t2, 0($sp)
+add $sp, $sp, 4
+        # POP $t1
+lw $t1, 0($sp)
+add $sp, $sp, 4
+        # POP $t0
+lw $t0, 0($sp)
+add $sp, $sp, 4
+        # POP $ra
+lw $ra, 0($sp)
+add $sp, $sp, 4
+add $sp, $sp, 8
+jr $ra    # return

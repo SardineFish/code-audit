@@ -31,6 +31,7 @@ bool SymbolTable::addSymbol(Symbol* symbol)
     if (symbol->type == Symbol::VARIABLE)
         symbol->addr = size;
     symbolMap[symbol->name] = *symbol;
+    symbolList.push_back(*symbol);
     size += symbol->valueType->size();
 
     return true; 
@@ -46,7 +47,9 @@ void SymbolTable::updateTotalSize()
 }
 size_t SymbolTable::offset()
 {
-    if(!upper)
+    if(isFunction)
+        return 0;
+    if (!upper)
         return 0;
     return upper->size + upper->offset();
 }
@@ -59,6 +62,7 @@ int SymbolTable::getAddr(size_t level, size_t offset)
     {
         return p->offset() + offset;
     }
+    
     return -1;
 }
 string SymbolTable::nameOfVar(size_t offset)
@@ -73,6 +77,15 @@ string SymbolTable::nameOfVar(size_t offset)
 size_t SymbolTable::totalSize()
 {
     return this->_totalSize;
+}
+SymbolTable* SymbolTable::funcTable()
+{
+    for (auto p = this; p != nullptr; p = p->upper)
+    {
+        if(p->isFunction)
+            return p;
+    }
+    return nullptr;
 }
 
 RegisterPool::RegisterPool()
@@ -172,7 +185,7 @@ Type* Type::bitType(Type* rhs)
 }
 Type * Type::dereferenceType()
 {
-    if(this->type != Type::POINTER || this->type != Type::ARRAY)
+    if(this->type != Type::POINTER && this->type != Type::ARRAY)
         return nullptr;
     return this->base;
 }

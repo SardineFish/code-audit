@@ -25,13 +25,13 @@
     (STACK).pop();
 
 #define RELEASE_REG(TARGET)                      \
-    if ((TARGET).type == OpTarget::Register) \
+    if ((TARGET).type == OpTarget::Register || (TARGET).type == OpTarget::AddressRegister) \
         block->registerPool.release((TARGET).value);
 
-bool evaluate(Expression *expr, uint64_t &value);
+bool evaluate_T(Expression *expr, uint64_t &value);
 void auditInternal(ASTNode *node, Program *program, CodeBlock *block);
 
-Type *getType(TypeNode *typeNode, vector<Expression *> *dims)
+Type *getType_T(TypeNode *typeNode, vector<Expression *> *dims)
 {
     Type *type;
     if (typeNode->type.attribute == "void")
@@ -58,7 +58,7 @@ Type *getType(TypeNode *typeNode, vector<Expression *> *dims)
         foreach(dim, dims)
         {
             uint64_t d = 0;
-            if(!evaluate(dim, d))
+            if(!evaluate_T(dim, d))
             {
                 perror("Dimension of array must be a constant.\n");
             }
@@ -71,12 +71,10 @@ Type *getType(TypeNode *typeNode, vector<Expression *> *dims)
 Program* analyse(ASTTree* ast)
 {
     auto program = new Program();
-    auditInternal(ast, program, nullptr);
 
-    for(auto & block : program->blocks)
-    {
-        block.second->symbolTable->updateTotalSize();
-    }
+    analyseSymbol(program, ast);
+
+    auditInternal(ast, program, nullptr);
 
     auto symbol = program->global->symbolTable->find("main");
     if(symbol.type == Symbol::NONE)
@@ -98,7 +96,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
 
     if (auto ast = dynamic_cast<ASTTree *>(node))
     {
-        block = program->newBlock(program->getLabel("_Code"), nullptr, new SymbolTable(nullptr));
+        block = program->newBlock(program->getLabel("_Code"), nullptr,program->gobalSymbols);
         program->global = block;
 
         foreach (def, ast->globals)
@@ -106,22 +104,19 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(VariableDefStatement, def)
     {
+        OpTarget lastVar;
         foreach (var, def->vars)
+        {
             ANALYSE(var);
+            POP(block->targetStack, target);
+            lastVar = target;
+        }
+        block->targetStack.push(lastVar);
     }
     ANALYSE_FOR(VariableDefine, var)
     {
-        Symbol symbol = {
-            Symbol::VARIABLE,
-            var->id->token.attribute,
-            0,
-            getType(var->type, var->arrayDimensions)
-        };
-        if(!block->symbolTable->addSymbol(&symbol))
-        {
-            fprintf(stderr, "Redefind variable '%s'.\n", symbol.name.c_str());
-        }
-        if(var->initValue)
+        Symbol symbol = block->symbolTable->find(var->id->token.attribute);
+        if (var->initValue)
         {
             OpTarget varAddr = {
                 OpTarget::Register,
@@ -130,7 +125,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             OP op = {
                 OP::LoadAddr,
                 varAddr,
-                {OpTarget::Memory, symbol.addr, symbol.valueType, symbol.level}};
+                {OpTarget::Memory, block->symbolTable->getAddr(symbol.level, symbol.addr), symbol.valueType, symbol.level}};
             block->codeSequence.push_back(op);
 
             if(StructInit* initValue = dynamic_cast<StructInit*>(var->initValue))
@@ -169,7 +164,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             {
                 ANALYSE(var->initValue);
                 POP(block->targetStack, val);
-                if(val.type != OpTarget::Register)
+                if(val.type == OpTarget::Memory || val.type == OpTarget::Constant || val.type == OpTarget::AddressRegister)
                 {
                     OpTarget temp = {
                         OpTarget::Register,
@@ -183,46 +178,39 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                     });
                     val = temp;
                 }
-
-                op = {
+                block->codeSequence.push_back({
                     OP::Store,
                     varAddr,
                     val,
-                    {OpTarget::Constant, 0}};
+                    {OpTarget::Constant, 0}});
                 RELEASE_REG(val);
             }
             RELEASE_REG(varAddr);
         }
+        block->targetStack.push({OpTarget::Memory, symbol.addr, symbol.valueType, symbol.level});
     }
     ANALYSE_FOR(FunctionDefine, func)
     {
-        
-        auto labelID = program->getLabel(func->name);
-        Symbol symbol = {
-            Symbol::FUNCTION,
-            func->name,
-            labelID,
-            new Type(nullptr)
-        };
-        block->symbolTable->addSymbol(&symbol);
+        Symbol symbol = block->symbolTable->find(func->name);
+        auto labelID = symbol.addr;
 
-        auto funcBlock = program->newBlock(labelID, nullptr, new SymbolTable(block->symbolTable, true));
+        auto funcBlock = program->newBlock(labelID, nullptr, func->body->symbolTable);
 
         FunctionSymbol funcSymbol;
         funcSymbol.name = func->name;
         foreach (arg, func->args)
-            funcSymbol.args.push_back(getType(arg->type, nullptr));
-        funcSymbol.returnType = getType(func->type, nullptr);
+            funcSymbol.args.push_back(getType_T(arg->type, nullptr));
+        funcSymbol.returnType = getType_T(func->type, nullptr);
         funcSymbol.symbol = symbol;
         funcSymbol.block = funcBlock;
         program->functions[func->name] = funcSymbol;
 
         // insert label
-        OP op = {
+        /*OP op = {
             OP::Label,
             {OpTarget::Label, labelID}
         };
-        funcBlock->codeSequence.push_back(op);
+        funcBlock->codeSequence.push_back(op);*/
 
         foreach (var, func->args)
             ANALYSE_X(var, funcBlock);
@@ -236,7 +224,8 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     ANALYSE_FOR(ExpressionStatement, statement)
     {
         ANALYSE(statement->expression);
-        POP(block->targetStack, _);
+        POP(block->targetStack, target);
+        RELEASE_REG(target);
     }
     ANALYSE_FOR(InfixExpr, expr)
     {
@@ -247,16 +236,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         auto lhs = block->targetStack.top();
         block->targetStack.pop();
 
-        /**
-         * 
-         * TODO: 
-         * - Add type to lhs, rhs, result  
-         * 
-         * 
-         * 
-         * 
-         * 
-         **/
 
         // Add op MOV R, [addr]
         if(lhs.type == OpTarget::Constant)
@@ -267,6 +246,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 OP::Load,
                 lhsTarget,
                 lhs,
+                {OpTarget::Constant, 0}
             });
             lhs = lhsTarget;
         }
@@ -290,9 +270,20 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             block->codeSequence.push_back({
                 OP::Load,
                 rhsReg,
-                rhs
+                rhs,
+                {OpTarget::Constant, 0}
             });
             rhs = rhsReg;
+        }
+        else if (rhs.type == OpTarget::AddressRegister)
+        {
+            block->codeSequence.push_back({
+                OP::Load,
+                rhs,
+                rhs,
+                {OpTarget::Constant, 0}
+            });
+            rhs.type = OpTarget::Register;
         }
 
         // handel lhs
@@ -325,9 +316,19 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 block->codeSequence.push_back({
                     OP::Load,
                     lhsReg,
-                    lhs
+                    lhs,
+                    {OpTarget::Constant, 0}
                 });
                 lhs = lhsReg;
+            }
+            else if (lhs.type == OpTarget::AddressRegister)
+            {
+                block->codeSequence.push_back({
+                    OP::Load,
+                    lhs,
+                    lhs,
+                    {OpTarget::Constant, 0}
+                });
             }
         }
         
@@ -405,7 +406,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         OpTarget target = {
             OpTarget::Memory,
-            symbol.addr,
+            block->symbolTable->getAddr(symbol.level, symbol.addr),
             symbol.valueType,
             symbol.level 
         };
@@ -424,7 +425,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 OpTarget::Register,
                 block->registerPool.get(),
                 arg.valueType};
-            block->codeSequence.push_back({OP::Load, argReg, arg});
+            block->codeSequence.push_back({OP::Load, argReg, arg, {OpTarget::Constant, 0}});
             arg = argReg;
         }
         if(expr->op.attribute == "!")
@@ -496,16 +497,39 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
 
         auto target = block->targetStack.top();
         block->targetStack.pop();
+        OpTarget targetVal = target;
+        OpTarget tempVal = {
+            OpTarget::Register,
+            block->registerPool.get(),
+            target.valueType
+        };
 
         if (target.type == OpTarget::Memory)
         {
-            OpTarget argReg = {
+            OpTarget targetVal = {
                 OpTarget::Register,
                 block->registerPool.get(),
                 target.valueType};
-            block->codeSequence.push_back({OP::Load, argReg, target});
-            target = argReg;
+            block->codeSequence.push_back({OP::Load, targetVal, target, {OpTarget::Constant, 0}});
         }
+        else if (target.type == OpTarget::AddressRegister)
+        {
+            OpTarget targetVal = {
+                OpTarget::Register,
+                block->registerPool.get(),
+                target.valueType};
+            block->codeSequence.push_back({
+                OP::Load,
+                targetVal,
+                target,
+                {OpTarget::Constant, 0}
+            });
+        }
+        block->codeSequence.push_back({
+            OP::Mov,
+            tempVal,
+            targetVal
+        });
         
         OP op;
         if (expr->op.attribute == "++")
@@ -516,21 +540,30 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             }
             op = {
                 OP::Increase,
-                target,
-                target,
+                tempVal,
+                tempVal,
                 {OpTarget::Null, 0}};
         }
         else if (expr->op.attribute == "--")
         {
             op = {
                 OP::Decrease,
-                target,
-                target,
+                tempVal,
+                tempVal,
                 {OpTarget::Null, 0}};
         }
 
         block->codeSequence.push_back(op);
-        block->targetStack.push(target);
+
+        block->codeSequence.push_back({
+            OP::Store,
+            target,
+            tempVal,
+            {OpTarget::Constant, 0}
+        });
+        RELEASE_REG(tempVal);
+        RELEASE_REG(target);
+        block->targetStack.push(targetVal);
     }
     ANALYSE_FOR(ArraySubscript, expr)
     {
@@ -544,11 +577,24 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         OpTarget temp = {
             OpTarget::Register,
             block->registerPool.get(),
-            nullptr
+            new Type(Type::INT32)
         };
 
-        // temp = array + offset * sizeof(*array)
         // temp = offset * sizeof(*array)
+        if(offset.type == OpTarget::Memory)
+        {
+            OpTarget reg = {
+                OpTarget::Register,
+                block->registerPool.get(),
+                new Type(Type::INT32)
+            };
+            block->codeSequence.push_back({
+                OP::Load,
+                reg,
+                offset
+            });
+            offset = reg;
+        }
         OP op = {
             OP::Multiply,
             temp,
@@ -556,29 +602,26 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             {OpTarget::Constant, array.valueType->base->size()}};
         block->codeSequence.push_back(op);
 
-        // temp = temp + array
-        op = {
-            OP::Add,
-            temp,
-            temp,
-            array,
-        };
-        block->codeSequence.push_back(op);
-
-        temp.valueType = array.valueType->dereferenceType();
-        // temp = [temp]
-        op = {
-            OP::Load,
-            temp,
-            temp,
-            {OpTarget::Null}};
-        block->codeSequence.push_back(op);
-
-        if(array.type == OpTarget::Register)
-            block->registerPool.release(array.value);
-        if(offset.type == OpTarget::Register)
-            block->registerPool.release(array.value);
-        block->targetStack.push(temp);
+        OpTarget reg = {
+                OpTarget::AddressRegister,
+                block->registerPool.get(),
+                new Type(Type::INT32)
+            };
+            block->codeSequence.push_back({
+                OP::LoadAddr,
+                reg,
+                array
+            });
+            block->codeSequence.push_back({
+                OP::Add,
+                reg,
+                reg,
+                temp
+            });
+            block->targetStack.push(reg);
+            RELEASE_REG(array);
+            RELEASE_REG(offset);
+            RELEASE_REG(temp);
     }
     ANALYSE_FOR(TypeCast, expr)
     {
@@ -630,6 +673,20 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         };
         block->codeSequence.push_back(op);
 
+        auto callee = program->functions[call->name];
+        auto calleeFrameSize = callee.block->symbolTable->totalSize();
+        OpTarget calleeFP = {
+            OpTarget::Register,
+            block->registerPool.get(),
+            new Type(Type::INT32)
+        };
+        block->codeSequence.push_back({
+            OP::Sub,
+            calleeFP,
+            {OpTarget::SP},
+            {OpTarget::Constant, calleeFrameSize}
+        });
+        int argIdx = 0;
         foreach (arg, call->args->list)
         {
             ANALYSE(arg);
@@ -649,15 +706,38 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 });
                 param = reg;
             }
+            else if(param.type == OpTarget::Constant)
+            {
+                OpTarget reg = {
+                    OpTarget::Register,
+                    block->registerPool.get(),
+                    param.valueType
+                };
+                block->codeSequence.push_back({
+                    OP::Load,
+                    reg,
+                    param
+                });
+                param = reg;
+            }
 
-            op = {
-                OP::Push,
-                {OpTarget::Null},
+            block->codeSequence.push_back({
+                OP::Store,
+                calleeFP,
                 param,
-                {OpTarget::Null}};
-            block->codeSequence.push_back(op);
+                {OpTarget::Constant, callee.block->symbolTable->symbolList[argIdx].addr}
+            });
+
             RELEASE_REG(param);
+            argIdx++;
         }
+        RELEASE_REG(calleeFP);
+        /*block->codeSequence.push_back({
+            OP::Sub,
+            {OpTarget::FP},
+            {OpTarget::FP},
+            {OpTarget::Constant, calleeFrameSize}
+        });*/
 
         op = {
             OP::Call,
@@ -699,7 +779,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             nullptr
         };
 
-        auto bodyBlock = program->newBlock(&block->registerPool, new SymbolTable(block->symbolTable));
+        auto bodyBlock = program->newBlock(&block->registerPool, if_struct->body->symbolTable);
         /*bodyBlock->codeSequence.push_back({
             OP::Label,
             {OpTarget::Label, bodyBlock->id}
@@ -727,7 +807,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             auto condition = block->targetStack.top();
             block->targetStack.pop();
 
-            auto bodyBlock = program->newBlock(endpoint.value, &block->registerPool, new SymbolTable(block->symbolTable));
+            auto bodyBlock = program->newBlock(endpoint.value, &block->registerPool, elseif->body->symbolTable);
 
 
             endpoint = {
@@ -753,7 +833,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         if(if_struct->elseBody)
         {
-            auto bodyBlock = program->newBlock(endpoint.value, &block->registerPool, new SymbolTable(block->symbolTable));
+            auto bodyBlock = program->newBlock(endpoint.value, &block->registerPool, if_struct->elseBody->symbolTable);
             ANALYSE_X(if_struct->elseBody, bodyBlock);
             bodyBlock->codeSequence.push_back({
                 OP::Goto,
@@ -776,14 +856,13 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(ForLoop, loop)
     {
-        auto bodyBlock = program->newBlock(&block->registerPool, new SymbolTable(block->symbolTable));
-        block->codeSequence.push_back({
-            OP::Loop,
-            {OpTarget::Label, bodyBlock->id}
-        });
+        auto id = program->getLabel();
+        id = program->getLabel("Loop_" + to_string(id));
+        auto bodyBlock = program->newBlock(id, &block->registerPool, loop->body->symbolTable);
+
         OpTarget entry = {
             OpTarget::Label,
-            program->getLabel(),
+            id,
             nullptr};
         OpTarget exit = {
             OpTarget::Label,
@@ -827,11 +906,15 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             OP::Goto,
             {OpTarget::Null},
             entry
+        });  
+        block->codeSequence.push_back({
+            OP::Loop,
+            {OpTarget::Label, bodyBlock->id}
         });
-        bodyBlock->codeSequence.push_back({
+        block->codeSequence.push_back({
             OP::Label,
             exit
-        });
+        });      
     }
     ANALYSE_FOR(ReturnStatement, rtn)
     {
@@ -874,7 +957,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
 }
 
-bool evaluate(Expression *expr, uint64_t& value)
+bool evaluate_T(Expression *expr, uint64_t& value)
 {
     try
     {

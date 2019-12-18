@@ -9,73 +9,6 @@ using namespace Parser;
 
 #define REGISTER_COUNT 4
 
-class Type
-{
-public:
-    enum BuiltInType
-    {
-        VOID = 0,
-        INT8 = 1,
-        INT16 = 2,
-        INT32 = 3,
-        INT64 = 4,
-        FLOAT = 5,
-        DOUBLE = 6,
-        POINTER = 7,
-        ARRAY = 8,
-    };
-    Type *base;
-    BuiltInType type;
-    size_t arraySize = 1;
-    size_t size();
-    Type *arithmeticType(Type* rhs);
-    Type *logicalType(Type *rhs);
-    Type *logicalType();
-    Type *bitType();
-    Type *bitType(Type* rhs);
-    Type *dereferenceType();
-    Type(BuiltInType type);
-    Type(Type *pointerBase);
-    Type(Type *elementType, size_t length);
-};
-
-struct Symbol
-{
-    enum SymbolType
-    {
-        NONE,
-        VARIABLE,
-        LABEL,
-        FUNCTION,
-    };
-    SymbolType type;
-    string name;
-    size_t addr;
-    Type *valueType;
-    int level;
-};
-
-class SymbolTable
-{
-public:
-    bool isFunction;
-    Symbol ExitPoint;
-    SymbolTable *upper = nullptr;
-    map<string, Symbol> symbolMap;
-    size_t size = 0;
-    int level;
-    bool addSymbol(Symbol *symbol);
-    SymbolTable(SymbolTable *upper, bool isFunc = false);
-    Symbol find(string name);
-    int getAddr(size_t level, size_t offset);
-    size_t totalSize();
-    size_t offset();
-    string nameOfVar(size_t offset);
-    void updateTotalSize();
-
-private:
-    size_t _totalSize = 0;
-};
 
 struct OpTarget
 {
@@ -86,8 +19,9 @@ struct OpTarget
         Memory,
         Constant,
         Label,
+        AddressRegister,
         SP,
-        AR,
+        RA,
         FP,
         V0,
     };
@@ -183,6 +117,7 @@ public:
     map<int, string> labels;
     map<string, FunctionSymbol> functions;
     CodeBlock *global;
+    SymbolTable* gobalSymbols;
     int getLabel(string name);
     int getLabel();
     CodeBlock *newBlock(int id, RegisterPool *registerPool, SymbolTable *SymbolTable);
@@ -195,3 +130,5 @@ private:
 Program *analyse(ASTTree *ast);
 
 void assemblyText(Program *program, FILE *fp);
+
+void analyseSymbol(Program* program, ASTTree* ast);

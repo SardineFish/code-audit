@@ -1,44 +1,23 @@
-#pragma once
-#include<stdio.h>
+int glob = 0;
 
-#define N 5
-
-#define MAX(X, Y) \
-    (X > Y ? X : Y)
-
-long glob = 0;
-int main(int a[], int b)
+int gcd(int x, int y)
 {
-    if (a == 0)
-        a[b]++;
-    int a[] = {1, 2, 3, 4, 5};
-    if (a == t)
-    {
-        for (int a = 0; i < 5;i+5)
-        {
-
-        }
-    }
-    unsigned long long**** t = 0;
-    int* a = 5, b = 6;
-    int arr[n+5];
-    ((((a + 5)))) * 6 + f(1);
-    1 >> 5 + 3 = 7 % 5 && 6;
-    a = b = c + 1;
-    b = 1 || 2 && 3 | 4 ^ 5 & 6 != 7 < 8 >> 9 + 10 * 11;
-    a = (double)(int)a++;
-    b = a+++++a;
-    b = *a + &b + +a - -b + ~a + !b;
-    *a.b + b + c;
-    &a.b + b + c;
-    return 0;
+    // break;
+    if (x % y == 0)
+        return y;
+    return gcd(y, x % y);
 }
 
-void bubbleSort(int arr[5], int term)
+int main()
 {
-    for (int i = 0; i < term; ++i)
+    int arr[10] = {1, 6, 7, 2, 6, 9, 3, 5, 4, 7};
+    int n = 10;
+
+    int t = gcd(16, 6);
+
+    for (int i = 0; i < n; i++)
     {
-        for (int index = 0; index < term - i - 1; ++index)
+        for (int index = 0; index < n - i - 1; index++)
         {
             if (arr[index] < arr[index + 1])
             {
@@ -49,16 +28,4 @@ void bubbleSort(int arr[5], int term)
             }
         }
     }
-    for (int counter = 0; counter < term; counter++)
-    {
-        cout << arr[counter] << endl;
-    }
-
-    cout << "Hi in this program I will do bubble sort" << endl;
-    cout << "The numbers are 3, 9, 5, 10, 6" << endl;
-    int num[9] = {3, 9, 5, 3, 10, 6, 3, 3, 3};
-    int terms = sizeof(num) / sizeof(num[0]);
-    bubbleSort(num, terms);
-
-    // answer = [2, 5, 6, 9, 2, 10]
 }

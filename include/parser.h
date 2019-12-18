@@ -1,5 +1,6 @@
 #pragma once
 #include "lexer.h"
+#include "symbol.h"
 #include <string>
 
 using namespace std;
@@ -134,6 +135,7 @@ class ListNode : public ASTNode
 class BlockNode : public ASTNode
 {
   public:
+    SymbolTable* symbolTable = nullptr;
     vector<Statement*>* statements = new vector<Statement*>;
     virtual string toString() override;
     virtual string toASTString(int level) override;

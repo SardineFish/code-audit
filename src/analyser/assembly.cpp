@@ -19,7 +19,7 @@ void assemblyText(Program *program, FILE *fp)
         }
         if (var.second.type == Symbol::VARIABLE)
         {
-            fprintf(fp, "%s: %s 0\n", var.first, type.c_str());
+            fprintf(fp, "%s: .%s 0\n", var.first.c_str(), type.c_str());
         }
     }
     fprintf(fp, "\n");
@@ -32,7 +32,7 @@ void assemblyText(Program *program, FILE *fp)
 
     if (program->entry)
     {
-        assemblyBlock(program, program->entry, fp);
+        assemblyFunction(program, program->entry, fp);
         assemblyOP({OP::Load,
                     {OpTarget::V0},
                     {OpTarget::Constant, 10}},
@@ -52,15 +52,25 @@ void assemblyText(Program *program, FILE *fp)
 void assemblyFunction(Program *program, CodeBlock* block, FILE* fp)
 {
     assemblyOP({
+        OP::Label,
+        {OpTarget::Label, block->id}
+    }, program, block, fp);
+    // fp = 
+    assemblyOP({
         OP::Sub,
         {OpTarget::SP, 0, new Type(Type::INT32)},
-        {OpTarget::FP, 0, new Type(Type::INT32)},
-        {OpTarget::Constant, block->symbolTable->totalSize(), new Type(Type::INT32)}
+        {OpTarget::SP, 0, new Type(Type::INT32)},
+        {OpTarget::Constant, block->symbolTable->totalSize(), new Type(Type::INT32)},
+    }, program, block, fp);
+    assemblyOP({
+        OP::Mov,
+        {OpTarget::FP},
+        {OpTarget::SP}
     }, program, block, fp);
     assemblyOP({
         OP::Push,
         {OpTarget::Null},
-        {OpTarget::AR}
+        {OpTarget::RA}
     }, program, block, fp);
     assemblyBlock(program, block, fp);
 }
@@ -73,6 +83,17 @@ void assemblyBlock(Program *program, CodeBlock *block, FILE *fp)
     }
 }
 
+string memOpTarget(OpTarget target, Program* program, CodeBlock* block)
+{
+    if (target.addition == 0)
+    {
+        auto name = program->global->symbolTable->nameOfVar(target.value);
+        return name + "($gp)";
+    }
+    auto addr = target.value;
+    return to_string(addr) + "($fp)";
+}
+
 void targetText(OpTarget target, string &text, Program* program, CodeBlock* block)
 {
     switch (target.type)
@@ -81,6 +102,7 @@ void targetText(OpTarget target, string &text, Program* program, CodeBlock* bloc
         text = to_string(target.value);
         break;
     case OpTarget::Register:
+    case OpTarget::AddressRegister:
         text = target.valueType->type == Type::DOUBLE || target.valueType->type == Type::FLOAT
                    ? "$f" + to_string(target.value)
                    : "$t" + to_string(target.value);
@@ -94,15 +116,14 @@ void targetText(OpTarget target, string &text, Program* program, CodeBlock* bloc
     case OpTarget::FP:
         text = "$fp";
         break;
-    case OpTarget::AR:
-        text = "$ar";
+    case OpTarget::RA:
+        text = "$ra";
         break;
     case OpTarget::Label:
         text = program->labels[target.value];
         break;
     case OpTarget::Memory:
-        auto arr = block->symbolTable->getAddr(target.addition, target.value);
-        text = to_string(arr) + "($fp)";
+        text = memOpTarget(target, program, block);
         break;
     }
 }
@@ -135,16 +156,18 @@ const char* toCStr<const char*>(const char* str)
 #define OP_LW(TARGET, SOURCE, OFFSET) \
     fprintf(fp, "lw %s, %d(%s)\n", toCStr(TARGET), OFFSET, toCStr(SOURCE))
 
-#define BIN_OP_F(OP_TYPE, OP_STR)                             \
-    case OP_TYPE:                                           \
-    {                                                       \
-        if (op.result.valueType->type == Type::FLOAT)       \
-            OP_R(OP_STR ".s", rd, rs, rt);                  \
-        else if (op.result.valueType->type == Type::DOUBLE) \
-            OP_R(OP_STR ".d", rd, rs, rt);                  \
-        else                                                \
-            OP_R(OP_STR, rd, rs, rt);                       \
-        break;                                              \
+#define BIN_OP_F(OP_TYPE, OP_STR)                                                                                      \
+    case OP_TYPE:                                                                                                      \
+    {                                                                                                                  \
+        if (!op.result.valueType)                                                                                      \
+            OP_R(OP_STR, rd, rs, rt);                                                                                  \
+        else if (op.result.valueType->type == Type::FLOAT)                                                             \
+            OP_R(OP_STR ".s", rd, rs, rt);                                                                             \
+        else if (op.result.valueType->type == Type::DOUBLE)                                                            \
+            OP_R(OP_STR ".d", rd, rs, rt);                                                                             \
+        else                                                                                                           \
+            OP_R(OP_STR, rd, rs, rt);                                                                                  \
+        break;                                                                                                         \
     }
 
 #define BIN_OP_I(OP_TYPE, OP_STR)                           \
@@ -176,16 +199,6 @@ const char* toCStr<const char*>(const char* str)
             OP_L(OP_STR, rd, rs);                       \
         break;
 
-string memOpTarget(OpTarget target, Program* program, CodeBlock* block)
-{
-    if(target.addition == 0)
-    {
-        auto name = program->global->symbolTable->nameOfVar(target.value);
-        return name + "($gp)";
-    }
-    auto addr = to_string(block->symbolTable->getAddr(target.addition, target.value));
-    return addr + "($fp)";
-}
 
 void assemblyOP(OP op, Program *program, CodeBlock *block, FILE *fp)
 {
@@ -207,6 +220,10 @@ void assemblyOP(OP op, Program *program, CodeBlock *block, FILE *fp)
             if (op.arg1.type == OpTarget::Memory)
             {
                 rs = memOpTarget(op.arg1, program, block);
+            }
+            else if(op.arg1.type == OpTarget::AddressRegister)
+            {
+                rs = "0(" + rs + ")";
             }
             switch (op.arg1.valueType->type)
             {
@@ -244,15 +261,36 @@ void assemblyOP(OP op, Program *program, CodeBlock *block, FILE *fp)
     }
     case OP::Mov:
     {
-        if(op.arg2.type == OpTarget::Constant)
+        if(op.arg1.type == OpTarget::Constant)
             OP_L("li", rd, rs);
+        else if(op.arg1.type == OpTarget::Memory)
+        {
+            assemblyOP({
+                OP::Load,
+                op.result,
+                op.arg1,
+                {OpTarget::Constant, 0}
+            }, program, block, fp);
+        }
         else
             OP_L("move", rd, rs);
         break;
     }
+    case OP::Increase:
+    {
+        OP_R("addi", rd, rs, "1");
+        break;
+    }
+    case OP::Decrease:
+    {
+        OP_R("subi", rd, rs, "1");
+        break;
+    }
     case OP::Add:                                           
-    {                                                       
-        if (op.result.valueType->type == Type::FLOAT)       
+    {
+        if(!op.result.valueType)
+            OP_R("add", rd, rs, rt);
+        else if (op.result.valueType->type == Type::FLOAT)
             OP_R("add.s", rd, rs, rt);                  
         else if (op.result.valueType->type == Type::DOUBLE) 
             OP_R("add.d", rd, rs, rt);                  
@@ -332,17 +370,29 @@ void assemblyOP(OP op, Program *program, CodeBlock *block, FILE *fp)
     {
         assemblyOP({
             OP::Pop,
-            {OpTarget::AR}
+            {OpTarget::RA}
+        }, program, block, fp);
+        assemblyOP({
+            OP::Add,
+            {OpTarget::SP, 0, new Type(Type::INT32)},
+            {OpTarget::SP, 0, new Type(Type::INT32)},
+            {OpTarget::Constant, block->symbolTable->funcTable()->totalSize(), new Type(Type::INT32)}
         }, program, block, fp);
         if(op.arg1.type != OpTarget::V0)
-            OP_L("move", "$v0", rs);
+        {
+            assemblyOP({
+                OP::Mov,
+                {OpTarget::V0},
+                op.arg1
+            }, program, block, fp);
+        }
         fprintf(fp, "jr $ra    # return\n");
         break;
     }
     case OP::LoadAddr:
     {
-        auto addr = block->symbolTable->getAddr(op.arg1.addition, op.arg1.value);
-        OP_R("sub", rd, "$fp", to_string(addr));
+        auto addr = op.arg1.value;
+        OP_R("add", rd, "$fp", to_string(addr));
         break;
     }
     case OP::If:
