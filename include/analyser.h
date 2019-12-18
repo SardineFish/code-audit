@@ -67,12 +67,14 @@ public:
     bool addSymbol(Symbol *symbol);
     SymbolTable(SymbolTable *upper, bool isFunc = false);
     Symbol find(string name);
+    int getAddr(size_t level, size_t offset);
     size_t totalSize();
     size_t offset();
+    string nameOfVar(size_t offset);
     void updateTotalSize();
 
 private:
-    size_t _totalSize;
+    size_t _totalSize = 0;
 };
 
 struct OpTarget

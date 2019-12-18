@@ -1,0 +1,28 @@
+{
+BasedOnStyle: LLVM, 
+IndentWidth: 4, 
+AlignAfterOpenBracket: Align, 
+AllowShortBlocksOnASingleLine: false, 
+AllowShortLoopsOnASingleLine: false, 
+AllowShortFunctionsOnASingleLine: false, 
+AllowShortIfStatementsOnASingleLine: false, 
+AllowShortCaseLabelsOnASingleLine: false, 
+PointerAlignment: Left, 
+ColumnLimit: 120, 
+BreakBeforeBraces: Custom, 
+AlwaysBreakTemplateDeclarations: true, 
+BraceWrapping: { 
+AfterEnum: true, 
+AfterStruct: true, 
+SplitEmptyFunction: true, 
+AfterClass: true, 
+AfterControlStatement: true, 
+AfterFunction: true, 
+AfterNamespace: true, 
+AfterUnion: true, 
+AfterExternBlock: 
+true, 
+BeforeCatch: true, 
+BeforeElse: true
+}
+}

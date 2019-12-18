@@ -141,14 +141,27 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
                 {
                     ANALYSE(element);
                     POP(block->targetStack, val);
+                    OpTarget tempReg = val;
+                    if (val.type != OpTarget::Register)
+                    {
+                        tempReg = {
+                            OpTarget::Register,
+                            block->registerPool.get(),
+                            symbol.valueType};
+                        block->codeSequence.push_back({
+                            OP::Load,
+                            tempReg,
+                            val
+                        });
+                    }
                     // offset(varAddr) = $val
                     block->codeSequence.push_back({
                         OP::Store,
                         varAddr,
-                        val,
+                        tempReg,
                         {OpTarget::Constant, offset}
                     });
-                    RELEASE_REG(val);
+                    RELEASE_REG(tempReg);
                     offset += size;
                 }
             }
@@ -156,6 +169,20 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             {
                 ANALYSE(var->initValue);
                 POP(block->targetStack, val);
+                if(val.type != OpTarget::Register)
+                {
+                    OpTarget temp = {
+                        OpTarget::Register,
+                        block->registerPool.get(),
+                        val.valueType
+                    };
+                    block->codeSequence.push_back({
+                        OP::Load,
+                        temp,
+                        val
+                    });
+                    val = temp;
+                }
 
                 op = {
                     OP::Store,
@@ -231,7 +258,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
          * 
          **/
 
-        // Avoid dual mem access
         // Add op MOV R, [addr]
         if(lhs.type == OpTarget::Constant)
         {
@@ -253,6 +279,58 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         OP op;
 
+        // Load rhs
+        if(rhs.type == OpTarget::Memory)
+        {
+            OpTarget rhsReg = {
+                OpTarget::Register,
+                block->registerPool.get(),
+                rhs.valueType
+            };
+            block->codeSequence.push_back({
+                OP::Load,
+                rhsReg,
+                rhs
+            });
+            rhs = rhsReg;
+        }
+
+        // handel lhs
+        if(expr->op == "=")
+        {
+            if(lhs.type == OpTarget::Memory)
+            {
+                OpTarget lhsReg = {
+                    OpTarget::Register,
+                    block->registerPool.get(),
+                    lhs.valueType
+                };
+                block->codeSequence.push_back({
+                    OP::LoadAddr,
+                    lhsReg,
+                    lhs
+                });
+                lhs = lhsReg;
+            }
+        }
+        else
+        {
+            if(lhs.type == OpTarget::Memory)
+            {
+                OpTarget lhsReg = {
+                    OpTarget::Register,
+                    block->registerPool.get(),
+                    lhs.valueType
+                };
+                block->codeSequence.push_back({
+                    OP::Load,
+                    lhsReg,
+                    lhs
+                });
+                lhs = lhsReg;
+            }
+        }
+        
         
         if(expr->op == "=")
         {
@@ -266,7 +344,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             result = rhs;
             rhs = t;
         }
-        if(expr->op == "+")
+        else if(expr->op == "+")
             op = {
                 OP::Add,
                 result,
@@ -331,18 +409,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             symbol.valueType,
             symbol.level 
         };
-        OpTarget reg = {
-            OpTarget::Register,
-            block->registerPool.get(),
-            symbol.valueType
-        };
-        OP op = {
-            OP::LoadAddr,
-            reg,
-            target
-        };
-        block->codeSequence.push_back(op);
-        block->targetStack.push(reg);
+        block->targetStack.push(target);
     }
     ANALYSE_FOR(PrefixExpr, expr)
     {
@@ -351,6 +418,15 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         block->targetStack.pop();
         OpTarget result = {OpTarget::Register, block->registerPool.get()};
         OP op;
+        if (arg.type == OpTarget::Memory)
+        {
+            OpTarget argReg = {
+                OpTarget::Register,
+                block->registerPool.get(),
+                arg.valueType};
+            block->codeSequence.push_back({OP::Load, argReg, arg});
+            arg = argReg;
+        }
         if(expr->op.attribute == "!")
         {
             result.valueType = arg.valueType->logicalType();
@@ -420,6 +496,16 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
 
         auto target = block->targetStack.top();
         block->targetStack.pop();
+
+        if (target.type == OpTarget::Memory)
+        {
+            OpTarget argReg = {
+                OpTarget::Register,
+                block->registerPool.get(),
+                target.valueType};
+            block->codeSequence.push_back({OP::Load, argReg, target});
+            target = argReg;
+        }
         
         OP op;
         if (expr->op.attribute == "++")
@@ -549,6 +635,20 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             ANALYSE(arg);
 
             POP(block->targetStack, param);
+            if(param.type == OpTarget::Memory)
+            {
+                OpTarget reg = {
+                    OpTarget::Register,
+                    block->registerPool.get(),
+                    param.valueType
+                };
+                block->codeSequence.push_back({
+                    OP::Load,
+                    reg,
+                    param
+                });
+                param = reg;
+            }
 
             op = {
                 OP::Push,
@@ -561,9 +661,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
 
         op = {
             OP::Call,
-            {OpTarget::Null},
             func,
-            {OpTarget::Null}
         };
         block->codeSequence.push_back(op);
         // pop frame pointer
@@ -602,6 +700,10 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         };
 
         auto bodyBlock = program->newBlock(&block->registerPool, new SymbolTable(block->symbolTable));
+        /*bodyBlock->codeSequence.push_back({
+            OP::Label,
+            {OpTarget::Label, bodyBlock->id}
+        });*/
 
         OP op = {
             OP::If,
@@ -626,6 +728,7 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
             block->targetStack.pop();
 
             auto bodyBlock = program->newBlock(endpoint.value, &block->registerPool, new SymbolTable(block->symbolTable));
+
 
             endpoint = {
                 OpTarget::Label,
@@ -662,13 +765,11 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         {
             block->codeSequence.push_back({
                 OP::Label,
-                {OpTarget::Null},
                 endpoint
             });
         }
         block->codeSequence.push_back({
             OP::Label,
-            {OpTarget::Null},
             exitpoint
         });
         
@@ -701,7 +802,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         bodyBlock->codeSequence.push_back({
             OP::Label,
-            {OpTarget::Null},
             entry
         });
         if (loop->s2)
@@ -730,7 +830,6 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         });
         bodyBlock->codeSequence.push_back({
             OP::Label,
-            {OpTarget::Null},
             exit
         });
     }
@@ -740,6 +839,23 @@ void auditInternal(ASTNode *node, Program* program, CodeBlock* block)
         {
             ANALYSE(rtn->expr);
             POP(block->targetStack, val);
+            if(val.type == OpTarget::Memory)
+            {
+                block->codeSequence.push_back({
+                    OP::Load,
+                    {OpTarget::V0},
+                    val
+                });
+            }
+            if(val.type == OpTarget::Constant)
+            {
+                block->codeSequence.push_back({
+                    OP::Load,
+                    {OpTarget::V0},
+                    val
+                });
+                val = {OpTarget::V0};
+            }
             block->codeSequence.push_back({
                 OP::Return,
                 {OpTarget::Null},

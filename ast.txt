@@ -13,7 +13,6 @@ AST-root
         name: y
     body:
       block
-        
         if
           condition: 
             infix: ==
@@ -42,60 +41,51 @@ AST-root
     params:
     body:
       block
-        statement
-          infix: =
-            variable: x
-            infix: +
+        variable-define
+          variable
+            name: a
+            initial-value
               infix: +
                 infix: +
                   infix: +
                     infix: +
-                      constant: 1
-                      constant: 2
-                    constant: 3
-                  constant: 4
-                constant: 5
-              constant: 6
+                      infix: +
+                        constant: 1
+                        constant: 2
+                      constant: 3
+                    constant: 4
+                  constant: 5
+                constant: 6
         variable-define
           variable
             name: t
             array-define
               array-size: 
-                constant: 0
+                constant: 10
             initial-value
               elements: 
                 constant: 1
                 constant: 2
                 constant: 3
-                constant: 2
-                constant: 3
+                constant: 4
+                constant: 5
+                constant: 6
         variable-define
           variable
             name: x
             initial-value
-              constant: 0
+              constant: 48
           variable
             name: y
             initial-value
-              constant: 0
+              constant: 64
         statement
-          func-invoke
-            name: scanf
-            params: 
-              constant: "%d,%d"
-              prefix: &
+          infix: =
+            variable: a
+            func-invoke
+              name: gcd
+              params: 
                 variable: x
-              prefix: &
                 variable: y
-        statement
-          func-invoke
-            name: printf
-            params: 
-              constant: "%d\n"
-              func-invoke
-                name: gcd
-                params: 
-                  variable: x
-                  variable: y
         return
           constant: 0

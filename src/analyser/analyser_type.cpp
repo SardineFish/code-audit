@@ -50,6 +50,30 @@ size_t SymbolTable::offset()
         return 0;
     return upper->size + upper->offset();
 }
+int SymbolTable::getAddr(size_t level, size_t offset)
+{
+    auto p = this;
+    while(p != nullptr && p->level != level)
+        p = p->upper;
+    if(p!=nullptr)
+    {
+        return p->offset() + offset;
+    }
+    return -1;
+}
+string SymbolTable::nameOfVar(size_t offset)
+{
+    for(auto &pair : this->symbolMap)
+    {
+        if(pair.second.addr == offset)
+            return pair.first;
+    }
+    return "";
+}
+size_t SymbolTable::totalSize()
+{
+    return this->_totalSize;
+}
 
 RegisterPool::RegisterPool()
 {}
