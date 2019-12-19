@@ -12,8 +12,10 @@ int main()
 {
     int arr[10] = {1, 6, 7, 2, 6, 9, 3, 5, 4, 7};
     int n = 10;
-
-    int t = gcd(16, 6);
+    int a = input();
+    int b = input();
+    int t = gcd(a, b);
+    output(t);
 
     for (int i = 0; i < n; i++)
     {

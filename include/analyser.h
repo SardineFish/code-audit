@@ -24,6 +24,7 @@ struct OpTarget
         RA,
         FP,
         V0,
+        A0,
     };
     OpTargetType type;
     uint64_t value;

@@ -95,7 +95,7 @@ RegisterPool::RegisterPool(int capacity)
     pool = new queue<int>;
     for (int i = 0; i < capacity; i++)
     {
-        pool->push(i + 1);
+        pool->push(i);
     }
 }
 int RegisterPool::get()

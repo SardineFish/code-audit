@@ -29,7 +29,7 @@
         block->registerPool.release((TARGET).value);
 
 bool evaluate_T(Expression *expr, uint64_t &value);
-void auditInternal(ASTNode *node, Program *program, CodeBlock *block);
+void analyseInternal(ASTNode *node, Program *program, CodeBlock *block);
 
 Type *getType_T(TypeNode *typeNode, vector<Expression *> *dims)
 {
@@ -689,6 +689,67 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(FunctionInvokeNode, call)
     {
+        /**
+         * 处理函数调用
+         **/
+
+        /**
+         * 处理特殊函数调用
+         * input、output使用 MIPS 系统调用直接输入输出数值
+         * input采用MIPS 5 号系统调用
+         * 调用结束后数值存在 $v0 寄存器中，将其作为返回值供上层表达式使用
+         * output采用 MIPS 1 号系统调用，并将要输出的数移到 $a0 寄存器
+         **/
+        if(call->name == "input")
+        {
+            if(call->args->list->size() > 0)
+            {
+                fprintf(stderr, "Paramater miss match.\n");
+            }
+            block->codeSequence.push_back({
+                OP::Load,
+                {OpTarget::V0},
+                {OpTarget::Constant, 5, new Type(Type::INT32)}
+            });
+            block->codeSequence.push_back({
+                OP::SysCall
+            });
+            block->targetStack.push({
+                OpTarget::V0,
+                0,
+                new Type(Type::INT32)
+            });
+
+            return;
+        }
+        else if(call->name == "output")
+        {
+            if (call->args->list->size() <= 0 || call->args->list->size() > 1)
+            {
+                fprintf(stderr, "Paramater miss match.\n");
+            }
+            ANALYSE(call->args->list->at(0));
+            POP(block->targetStack, param);
+            block->codeSequence.push_back({
+                OP::Load,
+                {OpTarget::A0},
+                param
+            });
+            block->codeSequence.push_back({
+                OP::Load,
+                {OpTarget::V0},
+                {OpTarget::Constant, 1, new Type(Type::INT32)}
+            });
+            block->codeSequence.push_back({
+                OP::SysCall
+            });
+            RELEASE_REG(param);
+
+            return;
+        }
+        /**
+         * 从符号表中获取函数信息，检查函数是否未定义
+         **/
         auto symbol = block->symbolTable->find(call->name);
         OpTarget func = {
             OpTarget::Label,
@@ -713,7 +774,12 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
         }
         auto regType = new Type(Type::INT32);
         OP op;
-        // Save registers
+
+        /**
+         * 保存当前寄存器，
+         * 使用 PUSH 中间代码指令将寄存器 $t0 ~ $t3 保存到栈中
+         * 并PUPSH保存当前函数的局部变量基址寄存器 $fp
+         **/
         for (auto i = 0; i < REGISTER_COUNT; i++)
         {
             op = {
@@ -733,6 +799,11 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
         };
         block->codeSequence.push_back(op);
 
+        /**
+         * 计算被调用的函数的局部变量基址（当前栈顶指针 - 子函数局部变量总空间）
+         * 将参数移入子函数的局部变量内存地址中
+         * （参数在子函数局部变量中的偏移地址参考子函数的符号表）
+         **/
         auto callee = program->functions[call->name];
         auto calleeFrameSize = callee.block->symbolTable->totalSize();
         OpTarget calleeFP = {
@@ -749,6 +820,9 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
         int argIdx = 0;
         foreach (arg, call->args->list)
         {
+            /**
+             * 依次翻译每个函数参数表达式，并将结果值移入被调用的子函数的局部变量空间中
+             **/
             ANALYSE(arg);
 
             POP(block->targetStack, param);
@@ -792,25 +866,28 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
             argIdx++;
         }
         RELEASE_REG(calleeFP);
-        /*block->codeSequence.push_back({
-            OP::Sub,
-            {OpTarget::FP},
-            {OpTarget::FP},
-            {OpTarget::Constant, calleeFrameSize}
-        });*/
 
         op = {
             OP::Call,
             func,
         };
         block->codeSequence.push_back(op);
-        // pop frame pointer
+        /**
+         * 函数调用结束后由return 指令会将返回值储存在 $v0 寄存器中
+         * 将 $v0 寄存器作为该函数调用表达式的结果，压入结果栈，供上层使用
+         **/
+
+        /**
+         * 从栈中 POP 出此前压栈保存的当前函数的局部变量基址寄存器
+         **/
         op = {
             OP::Pop,
             {OpTarget::FP}
         };
         block->codeSequence.push_back(op);
-        // pop registers
+        /**
+         * 从栈中 POP 还原出此前压栈保存的 t0 ~ t3 寄存器
+         **/
         for (auto i = REGISTER_COUNT - 1; i >= 0; i--)
         {
             op = {
@@ -824,6 +901,47 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(If, if_struct)
     {
+        /**
+         * 将 if 语句翻译成 if !condition goto Label 的形式
+         * 由于基本块是顺序排列的，所以若条件成立，直接继续执行后续代码，反正跳转到下一个判断点（elseif/else/结束位置）
+         * 例如
+         * if (conditionA)
+         * {
+         *      do a;
+         *      do b;
+         *      ...
+         * }
+         * else if (conditionB)
+         * {
+         *      do c;
+         *      do d;
+         *      ...
+         * }
+         * else
+         * {
+         *      do e;
+         *      ...
+         * }
+         * ...
+         * 翻译成
+         * if !conditionA goto Label_1
+         *  do a
+         *  do b
+         *  ...
+         *  goto End_If
+         * Label_1:
+         * if !conditionB goto Label_2
+         *  do c
+         *  do d
+         *  ...
+         *  goto End_If
+         * Label_2:
+         *  do e
+         *  ...
+         *  goto End_If
+         * End_If:
+         *  ...
+         **/
         ANALYSE(if_struct->condition);
         auto condition = block->targetStack.top();
         block->targetStack.pop();
@@ -840,10 +958,6 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
         };
 
         auto bodyBlock = program->newBlock(&block->registerPool, if_struct->body->symbolTable);
-        /*bodyBlock->codeSequence.push_back({
-            OP::Label,
-            {OpTarget::Label, bodyBlock->id}
-        });*/
 
         OP op = {
             OP::If,
@@ -868,7 +982,6 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
             block->targetStack.pop();
 
             auto bodyBlock = program->newBlock(endpoint.value, &block->registerPool, elseif->body->symbolTable);
-
 
             endpoint = {
                 OpTarget::Label,
@@ -916,6 +1029,24 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(ForLoop, loop)
     {
+        /**
+         * 翻译 for 循环（while循环已经在语法分析的时候转换成等价的for循环语句了, 即 while(condition){...} = for( ; condition; ){...}）
+         * 对于 for (stat1; condition; stat3)
+         * {
+         *      do sth;
+         *      ...
+         * }
+         * 翻译成
+         * 
+         *  do stat1
+         * Start_Loop:
+         *  if !condition goto End_Loop
+         *  do sth
+         *  ...
+         *  do stat3
+         *  goto Start_Loop
+         * End_Loop
+         **/
         auto id = program->getLabel();
         id = program->getLabel("Loop_" + to_string(id));
         auto bodyBlock = program->newBlock(id, &block->registerPool, loop->body->symbolTable);
@@ -978,6 +1109,13 @@ void analyseInternal(ASTNode *node, Program* program, CodeBlock* block)
     }
     ANALYSE_FOR(ReturnStatement, rtn)
     {
+        /**
+         * 处理函数的return语句
+         * 将 return expr; 语句
+         * 翻译 expr 表达式，并将结果移入返回值寄存器 $v0 中
+         * 并加入 return 的中间代码，
+         * 函数return需要处理的指令跳转和栈空间释放在生成目标代码的部分实现
+         **/
         if(rtn->expr)
         {
             ANALYSE(rtn->expr);
